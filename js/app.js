@@ -50,7 +50,7 @@ const state = {
   likeDelta: loadLikeDelta(),
   deleted: new Set(loadDeleted()),
   objectUrls: new Map(),
-  compare: false,
+  refOpen: false,
   refIndex: 0,
   site: null,
   likeCounts: {},
@@ -73,8 +73,11 @@ const els = {
   like: document.querySelector("[data-like]"),
   likeIcon: document.querySelector("[data-like-icon]"),
   likeCount: document.querySelector("[data-like-count]"),
-  refsBtn: document.querySelector("[data-refs]"),
+  spec: document.querySelector("[data-spec]"),
   pager: document.querySelector("[data-pager]"),
+  refView: document.querySelector("#ref-view"),
+  refViewImg: document.querySelector("#ref-view img"),
+  refViewThumbs: document.querySelector("[data-ref-view-thumbs]"),
   strip: document.querySelector(".strip"),
   empty: document.querySelector(".empty"),
   emptyTitle: document.querySelector("[data-i18n='emptyTitle']"),
@@ -195,12 +198,50 @@ function refsOf(work) {
     .filter((item) => item.src);
 }
 
+function gcd(a, b) {
+  let x = Math.abs(a);
+  let y = Math.abs(b);
+  while (y) {
+    const next = x % y;
+    x = y;
+    y = next;
+  }
+  return x || 1;
+}
+
+function formatRatio(width, height) {
+  const common = [
+    [16, 9], [9, 16], [4, 3], [3, 4], [3, 2], [2, 3], [21, 9], [1, 1],
+  ];
+  const value = width / height;
+  const near = common.find(([a, b]) => Math.abs(value - a / b) < 0.02);
+  if (near) return `${near[0]}:${near[1]}`;
+  const divisor = gcd(width, height);
+  let a = Math.round(width / divisor);
+  let b = Math.round(height / divisor);
+  if (a > 30 || b > 30) {
+    if (value > 1) return `${value.toFixed(2)}:1`;
+    return `1:${(1 / value).toFixed(2)}`;
+  }
+  return `${a}:${b}`;
+}
+
 function applyOrient(el) {
   const width = el.naturalWidth || el.videoWidth || 0;
   const height = el.naturalHeight || el.videoHeight || 0;
-  if (!width || !height) return;
+  if (!width || !height) {
+    if (els.spec) els.spec.textContent = "";
+    return;
+  }
   const ratio = width / height;
   els.stage.dataset.orient = ratio > 1.12 ? "land" : ratio < 0.88 ? "port" : "square";
+  if (els.spec) {
+    els.spec.textContent = interpolate(t("spec"), {
+      w: width,
+      h: height,
+      ratio: formatRatio(width, height),
+    });
+  }
 }
 
 function wait(ms) {
@@ -257,35 +298,13 @@ function renderStage() {
   const poster = posterOf(work);
   const bloom = poster || src;
   const refs = refsOf(work);
-  if (!refs.length) state.compare = false;
   if (state.refIndex >= refs.length) state.refIndex = 0;
-  els.stage.dataset.compare = state.compare ? "true" : "false";
 
   const title = localized(work.title, state.lang) || t("untitled");
-  const currentRef = refs[state.refIndex];
-  const refBlock = state.compare && currentRef
-    ? `
-      <div class="ref-plate">
-        <div class="ref-stack">
-          <span class="ref-kicker">${t("refLabel")}</span>
-          <img src="${currentRef.src}" alt="${t("refLabel")}">
-          ${refs.length > 1 ? `
-            <div class="ref-thumbs">
-              ${refs.map((item, i) => `
-                <button type="button" data-ref-index="${i}" aria-current="${i === state.refIndex}" aria-label="${t("refLabel")} ${i + 1}">
-                  <img src="${item.src}" alt="">
-                </button>
-              `).join("")}
-            </div>
-          ` : ""}
-        </div>
-      </div>
-    `
-    : "";
 
   const promptEn = localized(work.prompt, "en");
   const promptZh = localized(work.prompt, "zh");
-  const showRails = !state.compare && Boolean(promptEn || promptZh);
+  const showRails = Boolean(promptEn || promptZh);
   els.stage.dataset.rails = showRails ? "true" : "false";
 
   const plateMedia = work.type === "video"
@@ -300,11 +319,9 @@ function renderStage() {
   els.media.innerHTML = `
     <div class="bloom" aria-hidden="true"><img src="${bloom}" alt=""></div>
     <div class="stage-planes">
-      ${refBlock}
       ${rail("en", promptEn)}
       <div class="plate">
         <button class="hit prev" type="button" data-prev aria-label="${t("prev")}"></button>
-        ${state.compare ? `<span class="plate-kicker">${t("resultLabel")}</span>` : ""}
         ${plateMedia}
         <button class="hit next" type="button" data-next aria-label="${t("next")}"></button>
       </div>
@@ -345,16 +362,20 @@ function renderStage() {
   const count = state.likeCounts[work.id];
   els.likeCount.textContent = count == null ? "" : String(count);
   refreshLikeCount(work.id);
-  els.refsBtn.hidden = refs.length === 0;
-  els.refsBtn.textContent = interpolate(t("refsCount"), { n: refs.length });
-  els.refsBtn.setAttribute("aria-pressed", state.compare ? "true" : "false");
-  els.refsBtn.setAttribute("aria-label", state.compare ? t("refsClose") : t("refsOpen"));
   els.pager.textContent = interpolate(t("countOf"), {
     n: String(state.index + 1).padStart(2, "0"),
     total: String(list.length).padStart(2, "0"),
   });
 
-  els.strip.innerHTML = list
+  const refDock = refs.length
+    ? `<div class="ref-dock">${refs.map((item, i) => `
+        <button type="button" data-open-ref="${i}" aria-label="${t("refLabel")} ${i + 1}">
+          <img src="${item.src}" alt="">
+        </button>
+      `).join("")}</div><span class="dock-rule" aria-hidden="true"></span>`
+    : "";
+
+  els.strip.innerHTML = refDock + list
     .map((item, i) => {
       const current = i === state.index;
       const thumb = posterOf(item) || srcOf(item);
@@ -412,8 +433,9 @@ function goTo(index, { shutterChange = false } = {}) {
   const next = (index + list.length) % list.length;
   const apply = () => {
     state.index = next;
-    state.compare = false;
+    state.refOpen = false;
     state.refIndex = 0;
+    if (els.refView.open) els.refView.close();
     renderStage();
   };
   if (shutterChange) shutter(apply);
@@ -486,11 +508,31 @@ function leaveOwner() {
   renderStage();
 }
 
-function toggleCompare() {
-  const work = currentWork();
-  if (!work || !refsOf(work).length) return;
-  state.compare = !state.compare;
-  renderStage();
+function openRefView(index) {
+  const refs = currentWork() ? refsOf(currentWork()) : [];
+  if (!refs.length) return;
+  state.refOpen = true;
+  state.refIndex = (index + refs.length) % refs.length;
+  const current = refs[state.refIndex];
+  els.refViewImg.src = current.src;
+  els.refViewImg.alt = `${t("refLabel")} ${state.refIndex + 1}`;
+  els.refViewThumbs.innerHTML = refs.map((item, i) => `
+    <button type="button" data-open-ref="${i}" aria-current="${i === state.refIndex}" aria-label="${t("refLabel")} ${i + 1}">
+      <img src="${item.src}" alt="">
+    </button>
+  `).join("");
+  if (!els.refView.open) els.refView.showModal();
+}
+
+function closeRefView() {
+  state.refOpen = false;
+  if (els.refView.open) els.refView.close();
+}
+
+function stepRef(delta) {
+  const refs = currentWork() ? refsOf(currentWork()) : [];
+  if (!refs.length) return;
+  openRefView(state.refIndex + delta);
 }
 
 function togglePlay() {
@@ -783,7 +825,17 @@ function bind() {
     else openAuth();
   });
   els.like.addEventListener("click", toggleLike);
-  els.refsBtn.addEventListener("click", toggleCompare);
+  els.refView.addEventListener("click", (event) => {
+    if (event.target === els.refView) closeRefView();
+    const thumb = event.target.closest("[data-open-ref]");
+    if (thumb) openRefView(Number(thumb.dataset.openRef));
+  });
+  document.querySelector("[data-close-ref]").addEventListener("click", closeRefView);
+  document.querySelector("[data-ref-prev]").addEventListener("click", () => stepRef(-1));
+  document.querySelector("[data-ref-next]").addEventListener("click", () => stepRef(1));
+  els.refView.addEventListener("close", () => {
+    state.refOpen = false;
+  });
   els.uploadOpen.addEventListener("click", async () => {
     await restoreDraft();
     els.upload.showModal();
@@ -812,14 +864,16 @@ function bind() {
     if (event.target.closest("[data-prev]")) goTo(state.index - 1);
     if (event.target.closest("[data-next]")) goTo(state.index + 1);
     if (event.target.closest("[data-toggle-play]")) togglePlay();
-    const refThumb = event.target.closest("[data-ref-index]");
-    if (refThumb) {
-      state.refIndex = Number(refThumb.dataset.refIndex);
-      renderStage();
-    }
+    const refThumb = event.target.closest("[data-open-ref]");
+    if (refThumb) openRefView(Number(refThumb.dataset.openRef));
   });
 
   els.strip.addEventListener("click", (event) => {
+    const refThumb = event.target.closest("[data-open-ref]");
+    if (refThumb) {
+      openRefView(Number(refThumb.dataset.openRef));
+      return;
+    }
     const thumb = event.target.closest("[data-index]");
     if (!thumb) return;
     goTo(Number(thumb.dataset.index));
@@ -834,7 +888,7 @@ function bind() {
   document.querySelectorAll("[data-close]").forEach((btn) => {
     btn.addEventListener("click", () => btn.closest("dialog").close());
   });
-  [els.auth, els.upload, els.publish, els.likesDialog].forEach((dialog) => {
+  [els.auth, els.upload, els.publish, els.likesDialog, els.refView].forEach((dialog) => {
     dialog.addEventListener("click", (event) => {
       if (event.target === dialog) dialog.close();
     });
@@ -906,10 +960,15 @@ function bind() {
 
   document.addEventListener("keydown", (event) => {
     if (event.target.matches("input, textarea")) return;
+    if (state.refOpen) {
+      if (event.key === "ArrowLeft") stepRef(-1);
+      if (event.key === "ArrowRight") stepRef(1);
+      return;
+    }
     if (event.key === "ArrowLeft") goTo(state.index - 1);
     if (event.key === "ArrowRight") goTo(state.index + 1);
     if (event.key === "l" || event.key === "L") toggleLike();
-    if (event.key === "r" || event.key === "R") toggleCompare();
+    if (event.key === "r" || event.key === "R") openRefView(0);
     if (event.key === " ") {
       event.preventDefault();
       togglePlay();
@@ -919,10 +978,7 @@ function bind() {
       else if (els.auth.open) els.auth.close();
       else if (els.publish.open) els.publish.close();
       else if (els.likesDialog.open) els.likesDialog.close();
-      else if (state.compare) {
-        state.compare = false;
-        renderStage();
-      }
+      else if (state.refOpen) closeRefView();
     }
   });
 
@@ -951,7 +1007,7 @@ function applyQuery() {
   }
   if (cat === "video" || cat === "image") state.cat = cat;
   state.wantedId = params.get("id") || "";
-  if (params.get("refs") === "1") state.compare = true;
+  if (params.get("refs") === "1") state.refOpen = true;
 }
 
 function updatePublishStatus(message) {

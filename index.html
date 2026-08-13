@@ -33,9 +33,9 @@
         <div class="caption">
           <div class="meta">
             <p class="models" data-models></p>
+            <p class="spec" data-spec></p>
           </div>
           <div class="caption-end">
-            <button class="refs-btn" type="button" data-refs hidden></button>
             <button class="icon-btn like-btn" type="button" data-like data-i18n-aria="like" aria-pressed="false" aria-label="喜欢">
               <span data-like-icon></span>
               <span class="like-count" data-like-count></span>
@@ -56,6 +56,14 @@
     </main>
 
     <div class="strip" hidden></div>
+
+    <dialog class="ref-view" id="ref-view">
+      <button class="ref-view-close" type="button" data-close-ref data-i18n="close">关闭</button>
+      <img alt="">
+      <button class="hit prev" type="button" data-ref-prev data-i18n-aria="prev"></button>
+      <button class="hit next" type="button" data-ref-next data-i18n-aria="next"></button>
+      <div class="ref-view-thumbs" data-ref-view-thumbs></div>
+    </dialog>
 
     <div class="owner-bar owner-only" hidden>
       <button class="text-link" type="button" data-open-upload data-i18n="upload">上传</button>

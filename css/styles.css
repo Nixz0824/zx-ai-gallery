@@ -415,11 +415,20 @@ a {
 }
 
 .models {
-  margin: 0 0 var(--space-8);
+  margin: 0;
   font-family: var(--font-mono);
   font-size: 0.7rem;
   letter-spacing: 0.08em;
   color: var(--color-muted);
+}
+
+.spec {
+  margin: 6px 0 0;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  color: var(--color-faint);
+  font-variant-numeric: tabular-nums;
 }
 
 .prompt {
@@ -579,6 +588,117 @@ a {
 }
 
 .thumb[aria-current="true"] {
+  border-color: var(--color-accent);
+}
+
+.ref-dock {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex: 0 0 auto;
+  margin-right: 14px;
+}
+
+.ref-dock button {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  overflow: hidden;
+  opacity: 0.62;
+  border: 1px solid transparent;
+  background: var(--color-paper-3);
+}
+
+.ref-dock img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ref-dock button:hover,
+.ref-dock button:focus-visible,
+.ref-dock button[aria-current="true"] {
+  opacity: 1;
+  border-color: var(--color-accent);
+}
+
+.dock-rule {
+  width: 1px;
+  height: 36px;
+  margin-right: 14px;
+  background: var(--color-rule);
+  flex: 0 0 auto;
+}
+
+.ref-view {
+  width: 100vw;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: var(--space-24);
+  border: 0;
+  background: oklch(8% 0.014 55 / 0.92);
+  color: var(--color-ink);
+}
+
+.ref-view::backdrop {
+  background: oklch(6% 0.014 55 / 0.72);
+}
+
+.ref-view img {
+  display: block;
+  max-width: min(92vw, 1200px);
+  max-height: calc(100dvh - 140px);
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  margin: 8vh auto 0;
+}
+
+.ref-view-close {
+  position: absolute;
+  top: 18px;
+  right: var(--page-gutter);
+  color: var(--color-muted);
+  min-height: 44px;
+}
+
+.ref-view .hit {
+  top: 12vh;
+  bottom: 120px;
+}
+
+.ref-view-thumbs {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 28px;
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+
+.ref-view-thumbs button {
+  width: 48px;
+  height: 48px;
+  overflow: hidden;
+  opacity: 0.55;
+  border: 1px solid transparent;
+}
+
+.ref-view-thumbs img {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  object-fit: cover;
+}
+
+.ref-view-thumbs button[aria-current="true"],
+.ref-view-thumbs button:hover {
+  opacity: 1;
   border-color: var(--color-accent);
 }
 
