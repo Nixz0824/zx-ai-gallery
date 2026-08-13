@@ -317,9 +317,11 @@ function renderStage() {
 
   const plateMedia = work.type === "video"
     ? `<div class="plate-frame">
-        <video class="plate-media" src="${src}" poster="${poster}" playsinline></video>
-        <div class="play-mark" aria-hidden="true">${icon("play")}</div>
-        ${transportMarkup()}
+        <div class="plate-shot">
+          <video class="plate-media" src="${src}" poster="${poster}" playsinline></video>
+          <div class="play-mark" aria-hidden="true">${icon("play")}</div>
+          ${transportMarkup()}
+        </div>
       </div>`
     : `<img class="plate-media" src="${src}" alt="${title}">`;
 
@@ -781,7 +783,7 @@ function bumpTransport() {
   bar.classList.add("is-on");
   window.clearTimeout(hideTransportTimer);
   if (els.stage.dataset.paused === "true") return;
-  hideTransportTimer = window.setTimeout(() => bar.classList.remove("is-on"), 2400);
+  hideTransportTimer = window.setTimeout(() => bar.classList.remove("is-on"), 900);
 }
 
 function renderChips() {
