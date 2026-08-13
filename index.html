@@ -29,13 +29,10 @@
 
     <main>
       <section class="stage" data-kind="image">
-        <button class="hit prev" type="button" data-prev data-i18n-aria="prev" aria-label="上一件"></button>
-        <button class="hit next" type="button" data-next data-i18n-aria="next" aria-label="下一件"></button>
         <div class="stage-media"></div>
         <div class="caption">
           <div class="meta">
             <p class="models" data-models></p>
-            <p class="prompt" data-prompt></p>
           </div>
           <div class="caption-end">
             <button class="refs-btn" type="button" data-refs hidden></button>
@@ -62,6 +59,7 @@
 
     <div class="owner-bar owner-only" hidden>
       <button class="text-link" type="button" data-open-upload data-i18n="upload">上传</button>
+      <button class="text-link" type="button" data-edit data-i18n="edit">编辑</button>
       <button class="text-link" type="button" data-delete data-i18n="delete">删除</button>
       <button class="text-link" type="button" data-export data-i18n="export">导出清单</button>
       <button class="text-link" type="button" data-likes-board data-i18n="likesBoard">点赞</button>
@@ -114,8 +112,17 @@
           </div>
         </div>
         <div class="field">
-          <label for="work-prompt" data-i18n="promptLabel">提示词</label>
-          <textarea id="work-prompt" data-i18n-ph="promptPh"></textarea>
+          <span data-i18n="promptLabel">提示词</span>
+          <div class="prompt-grid">
+            <div>
+              <label for="work-prompt-zh" data-i18n="promptZh">中文</label>
+              <textarea id="work-prompt-zh" data-i18n-ph="promptZhPh"></textarea>
+            </div>
+            <div>
+              <label for="work-prompt-en" data-i18n="promptEn">English</label>
+              <textarea id="work-prompt-en" data-i18n-ph="promptEnPh"></textarea>
+            </div>
+          </div>
         </div>
         <button class="text-link" type="submit" data-i18n="save">收入档案</button>
         <button class="text-link" type="button" data-close data-i18n="close">关闭</button>

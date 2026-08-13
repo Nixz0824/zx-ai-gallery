@@ -1,11 +1,41 @@
 {
   "works": [
     {
+      "id": "3a3aca75-2236-455c-b870-5821bdfffad4",
+      "type": "video",
+      "src": "media/videos/mupeiling_grok_v3_15s.mp4",
+      "poster": "",
+      "title": {
+        "zh": "慕沛灵",
+        "en": "慕沛灵"
+      },
+      "models": [
+        "minimax h3；grok"
+      ],
+      "prompt": {
+        "zh": "【Shot form — highest priority】\nA 15-second, 16:9, single continuous long take, photoreal Chinese xianxia cinematic CG, slow atmospheric pacing.\nHard cuts, jump cuts, shot changes, montage, scene switches, and black flash transitions are strictly forbidden.\nReferences K1, K3, and K5 are pose anchors inside ONE continuous shot, not three separate shots.\nCamera path: slow push-in from medium-wide → medium close-up → gentle follow on hand and petal → smooth pull-back. Steadicam one-take.\n\n【Opening lock — must start from K1】\nFrame 0 must strictly match K1: black hair, lotus on a stone in shallow water, eyes closed in sorrow, snowy peach-blossom mist, medium-wide.\nDo not open on petal-catching, face close-up, or white hair. Fully establish K1, then slowly push in.\n\n【Character】\nMu Peiling (A Record of a Mortal’s Journey to Immortality), Luoyun Sect cultivator, heart-demon vision from longing for Han Li. Same face throughout; no face swap.\n\n【Hair color timeline — strict】\n- 0–11s (including push-in and petal catch): fully jet-black; no whitening, no frosted tips.\n- Only ~11–13s pull-back: hair continuously becomes fully silver-white (once only).\n- 13–15s: full silver-white hair.\n- No multiple whitening events.\n\n【References】\n- K1: opening at 0s — black hair, lotus on waterside stone, eyes closed.\n- K3: ~7–11s petal moment — black hair, open palm catches tiny petal, eyes on petal; still black hair.\n- K5: ~13–15s ending — full white hair, upward gaze, subtle relief, lips closed.\nMid eye-open sorrow (~4–7s) and white-hair sigh (~11–13s) via continuous performance only; no cut.\n\n【Environment】\nSnowy peach blossoms, shallow water, flat stone, soft mist, side light. Dress has real weight on stone/water; no floating cloth.\n\n【Petals and snow】\nFine snow throughout from upper side.\nSmall sparse petals enter from outside frame at upper side angle (not center zenith); slow fall with air resistance.\nPetal catch (~7–11s, black hair): natural arm raise → one tiny petal lands in palm → rests 0.5–1s → breeze blows it away → arm slightly relaxes; eyes always track the petal.\n\n【Hair and wind】\nGentle wind; clean non-greasy hair; wind-blown strands as separate filaments, not clumped. Same for white hair.\n\n【Tears】\nMoist eyes or very slow natural tearlight only; no static glued tear stickers.\n\n【Timeline — one continuous shot】\n0–4s: start on K1 medium-wide, slow push-in; black hair; eyes closed → about to open.\n4–7s: push to medium close-up; fully black hair; slowly open eyes, sorrowful; no cut.\n7–11s: closer for K3 petal catch; still black hair; petal lands, brief rest, blown away; natural arm motion; no cut.\n11–13s: same shot pulls back; hair turns fully white; lift face, soft sigh, lips closed; no cut.\n13–15s: settle into K5; full white hair; subtle relief; lips closed, no mouth acting.\n\n【Calligraphy on screen — zero text errors】\nFrom ~13.2s to end:\n- Upper-right classical Chinese calligraphy, elegant running-script feel (not print).\n- Vertical: top-to-bottom; columns right-to-left.\n- Small size (~2/3 of typical large subtitles).\n- Exact text (no period; comma allowed), zero wrong characters:\n  公子，我已经找到了我想要的自由\n- Slow fade-in / gentle emergence only.\n- Depth: text mid/back; white hair strands can occlude text in front (hair over text).\n- No other subtitles, watermarks, English garbage, or garbled glyphs.\n\n【Audio — full silence for your manual BGM】\nNo BGM, score, dialogue, voice-over, ambience, wind, snow, water, or any SFX.\nOutput completely silent so you can add BGM later yourself.\nIf unsure: total silence only.\n\n【Hard constraints】\n1) Frame 0 = K1 medium-wide.\n2) Single continuous take; no hard cuts.\n3) Black hair until 11s; one whitening after 11s; ending fully white.\n4) Petal: side-fall, into palm, brief rest, blow away; natural arm.\n5) Separate hair strands; no static tears.\n6) Small elegant calligraphy, no period, fade-in, exact Chinese text; hair can cover text.\n7) Completely silent; no pure-black open/close.",
+        "en": "【Shot form — highest priority】\nA 15-second, 16:9, single continuous long take, photoreal Chinese xianxia cinematic CG, slow atmospheric pacing.\nHard cuts, jump cuts, shot changes, montage, scene switches, and black flash transitions are strictly forbidden.\nReferences K1, K3, and K5 are pose anchors inside ONE continuous shot, not three separate shots.\nCamera path: slow push-in from medium-wide → medium close-up → gentle follow on hand and petal → smooth pull-back. Steadicam one-take.\n\n【Opening lock — must start from K1】\nFrame 0 must strictly match K1: black hair, lotus on a stone in shallow water, eyes closed in sorrow, snowy peach-blossom mist, medium-wide.\nDo not open on petal-catching, face close-up, or white hair. Fully establish K1, then slowly push in.\n\n【Character】\nMu Peiling (A Record of a Mortal’s Journey to Immortality), Luoyun Sect cultivator, heart-demon vision from longing for Han Li. Same face throughout; no face swap.\n\n【Hair color timeline — strict】\n- 0–11s (including push-in and petal catch): fully jet-black; no whitening, no frosted tips.\n- Only ~11–13s pull-back: hair continuously becomes fully silver-white (once only).\n- 13–15s: full silver-white hair.\n- No multiple whitening events.\n\n【References】\n- K1: opening at 0s — black hair, lotus on waterside stone, eyes closed.\n- K3: ~7–11s petal moment — black hair, open palm catches tiny petal, eyes on petal; still black hair.\n- K5: ~13–15s ending — full white hair, upward gaze, subtle relief, lips closed.\nMid eye-open sorrow (~4–7s) and white-hair sigh (~11–13s) via continuous performance only; no cut.\n\n【Environment】\nSnowy peach blossoms, shallow water, flat stone, soft mist, side light. Dress has real weight on stone/water; no floating cloth.\n\n【Petals and snow】\nFine snow throughout from upper side.\nSmall sparse petals enter from outside frame at upper side angle (not center zenith); slow fall with air resistance.\nPetal catch (~7–11s, black hair): natural arm raise → one tiny petal lands in palm → rests 0.5–1s → breeze blows it away → arm slightly relaxes; eyes always track the petal.\n\n【Hair and wind】\nGentle wind; clean non-greasy hair; wind-blown strands as separate filaments, not clumped. Same for white hair.\n\n【Tears】\nMoist eyes or very slow natural tearlight only; no static glued tear stickers.\n\n【Timeline — one continuous shot】\n0–4s: start on K1 medium-wide, slow push-in; black hair; eyes closed → about to open.\n4–7s: push to medium close-up; fully black hair; slowly open eyes, sorrowful; no cut.\n7–11s: closer for K3 petal catch; still black hair; petal lands, brief rest, blown away; natural arm motion; no cut.\n11–13s: same shot pulls back; hair turns fully white; lift face, soft sigh, lips closed; no cut.\n13–15s: settle into K5; full white hair; subtle relief; lips closed, no mouth acting.\n\n【Calligraphy on screen — zero text errors】\nFrom ~13.2s to end:\n- Upper-right classical Chinese calligraphy, elegant running-script feel (not print).\n- Vertical: top-to-bottom; columns right-to-left.\n- Small size (~2/3 of typical large subtitles).\n- Exact text (no period; comma allowed), zero wrong characters:\n  公子，我已经找到了我想要的自由\n- Slow fade-in / gentle emergence only.\n- Depth: text mid/back; white hair strands can occlude text in front (hair over text).\n- No other subtitles, watermarks, English garbage, or garbled glyphs.\n\n【Audio — full silence for your manual BGM】\nNo BGM, score, dialogue, voice-over, ambience, wind, snow, water, or any SFX.\nOutput completely silent so you can add BGM later yourself.\nIf unsure: total silence only.\n\n【Hard constraints】\n1) Frame 0 = K1 medium-wide.\n2) Single continuous take; no hard cuts.\n3) Black hair until 11s; one whitening after 11s; ending fully white.\n4) Petal: side-fall, into palm, brief rest, blow away; natural arm.\n5) Separate hair strands; no static tears.\n6) Small elegant calligraphy, no period, fade-in, exact Chinese text; hair can cover text.\n7) Completely silent; no pure-black open/close."
+      },
+      "createdAt": "2026-08-13",
+      "likes": 0,
+      "refs": [
+        "media/refs/K1_final_1672x941.jpg",
+        "media/refs/K3_final_1672x941.jpg",
+        "media/refs/K5_final_1672x941.jpg"
+      ]
+    },
+    {
       "id": "canal-dusk",
       "type": "image",
       "src": "media/images/canal-dusk.jpg",
-      "title": { "zh": "运河暮色", "en": "Canal Dusk" },
-      "models": ["Flux", "Midjourney"],
+      "title": {
+        "zh": "运河暮色",
+        "en": "Canal Dusk"
+      },
+      "models": [
+        "Flux",
+        "Midjourney"
+      ],
       "prompt": {
         "zh": "雾中运河边的孤单身影 钠灯 35mm 胶片颗粒 冷暖对比",
         "en": "A lone figure by a fogged canal, sodium lamps, 35mm grain, cold-warm contrast"
@@ -22,8 +52,13 @@
       "id": "alley-night",
       "type": "image",
       "src": "media/images/alley-night.jpg",
-      "title": { "zh": "巷夜", "en": "Alley Night" },
-      "models": ["Flux"],
+      "title": {
+        "zh": "巷夜",
+        "en": "Alley Night"
+      },
+      "models": [
+        "Flux"
+      ],
       "prompt": {
         "zh": "窄巷雨夜 一扇暖窗 竖构图 胶片颗粒",
         "en": "Rain in a narrow alley, one warm window, vertical frame, film grain"
@@ -36,8 +71,13 @@
       "id": "rain-cinema",
       "type": "image",
       "src": "media/images/rain-cinema.jpg",
-      "title": { "zh": "雨夜入口", "en": "Rain Entrance" },
-      "models": ["Flux"],
+      "title": {
+        "zh": "雨夜入口",
+        "en": "Rain Entrance"
+      },
+      "models": [
+        "Flux"
+      ],
       "prompt": {
         "zh": "雨夜老剧院入口 湿沥青反光 冷蓝调 胶片颗粒",
         "en": "Old cinema entrance in rain, wet asphalt, cool teal grade, film grain"
@@ -50,8 +90,13 @@
       "id": "empty-stage",
       "type": "image",
       "src": "media/images/empty-stage.jpg",
-      "title": { "zh": "空舞台", "en": "Empty Stage" },
-      "models": ["Midjourney"],
+      "title": {
+        "zh": "空舞台",
+        "en": "Empty Stage"
+      },
+      "models": [
+        "Midjourney"
+      ],
       "prompt": {
         "zh": "旧剧场空舞台 丝绒幕 胶片卷 一束灰尘光",
         "en": "Empty old theater stage, velvet curtains, film reels, one shaft of dust light"
@@ -64,8 +109,14 @@
       "id": "night-train-still",
       "type": "image",
       "src": "media/images/night-train.jpg",
-      "title": { "zh": "夜车", "en": "Night Car" },
-      "models": ["Flux", "Kling"],
+      "title": {
+        "zh": "夜车",
+        "en": "Night Car"
+      },
+      "models": [
+        "Flux",
+        "Kling"
+      ],
       "prompt": {
         "zh": "夜间空列车车厢 窗外灯光拖影 暖钨丝灯 胶片颗粒",
         "en": "Empty night train car, smeared window lights, warm tungsten, film grain"
@@ -79,8 +130,13 @@
       "type": "video",
       "src": "media/videos/canal-dusk.mp4",
       "poster": "media/images/canal-dusk.jpg",
-      "title": { "zh": "运河漂移", "en": "Canal Drift" },
-      "models": ["Kling"],
+      "title": {
+        "zh": "运河漂移",
+        "en": "Canal Drift"
+      },
+      "models": [
+        "Kling"
+      ],
       "prompt": {
         "zh": "沿雾河缓慢横移 钠灯呼吸 人物静止",
         "en": "Slow lateral drift along a fogged canal, sodium glow breathing, figure still"
@@ -94,8 +150,14 @@
       "type": "video",
       "src": "media/videos/night-train.mp4",
       "poster": "media/images/night-train.jpg",
-      "title": { "zh": "夜车推进", "en": "Night Push" },
-      "models": ["Kling", "Runway"],
+      "title": {
+        "zh": "夜车推进",
+        "en": "Night Push"
+      },
+      "models": [
+        "Kling",
+        "Runway"
+      ],
       "prompt": {
         "zh": "空车厢缓慢前推 雨点停在玻璃 城市灯光拖过",
         "en": "Slow push down an empty car, rain held on glass, city lights smearing past"
@@ -109,8 +171,13 @@
       "type": "video",
       "src": "media/videos/rain-cinema.mp4",
       "poster": "media/images/rain-cinema.jpg",
-      "title": { "zh": "雨中靠近", "en": "Rain Approach" },
-      "models": ["Runway"],
+      "title": {
+        "zh": "雨中靠近",
+        "en": "Rain Approach"
+      },
+      "models": [
+        "Runway"
+      ],
       "prompt": {
         "zh": "雨夜缓缓推向剧院门口 地面反光微微晃动",
         "en": "Slow push toward a rainy cinema door, wet ground reflections shifting"
@@ -124,8 +191,13 @@
       "type": "video",
       "src": "media/videos/alley-night.mp4",
       "poster": "media/images/alley-night.jpg",
-      "title": { "zh": "巷夜上移", "en": "Alley Rise" },
-      "models": ["Kling"],
+      "title": {
+        "zh": "巷夜上移",
+        "en": "Alley Rise"
+      },
+      "models": [
+        "Kling"
+      ],
       "prompt": {
         "zh": "雨巷缓慢上移 窗光微闪 人物静止",
         "en": "Slow rise in a rainy alley, window light flickering, figure still"

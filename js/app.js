@@ -19,7 +19,14 @@ import {
   loadRole,
   saveRole,
   downloadJson,
+  saveDraftMeta,
+  loadDraftMeta,
+  clearDraftMeta,
+  saveDraftBlobs,
+  loadDraftBlobs,
+  clearDraftBlobs,
 } from "./store.js";
+import { captureVideoPoster, blobToFile } from "./poster.js";
 import { getLikeCount, addLike, getLikeCounts } from "./likes.js";
 import {
   loadToken,
@@ -47,6 +54,7 @@ const state = {
   refIndex: 0,
   site: null,
   likeCounts: {},
+  editingId: "",
 };
 
 const els = {
@@ -74,6 +82,7 @@ const els = {
   emptyAction: document.querySelector("[data-empty-action]"),
   ownerBar: document.querySelector(".owner-bar"),
   uploadOpen: document.querySelector("[data-open-upload]"),
+  editOpen: document.querySelector("[data-edit]"),
   exportBtn: document.querySelector("[data-export]"),
   leaveOwner: document.querySelector("[data-leave-owner]"),
   auth: document.querySelector("#auth"),
@@ -88,7 +97,8 @@ const els = {
   titleInput: document.querySelector("#work-title"),
   modelsInput: document.querySelector("#work-models"),
   chips: document.querySelector("[data-chips]"),
-  promptInput: document.querySelector("#work-prompt"),
+  promptZh: document.querySelector("#work-prompt-zh"),
+  promptEn: document.querySelector("#work-prompt-en"),
   toast: document.querySelector(".toast"),
   publish: document.querySelector("#publish"),
   publishForm: document.querySelector("#publish-form"),
@@ -113,6 +123,7 @@ let pendingModels = [];
 let pendingRefs = [];
 let hasRefs = false;
 let toastTimer = 0;
+let skipDraftPersist = false;
 
 function t(key, vars) {
   const table = STRINGS[state.lang] || STRINGS.zh;
@@ -139,6 +150,8 @@ function applyChrome() {
   els.role.dataset.on = state.role === "owner" ? "true" : "false";
   els.role.textContent = state.role === "owner" ? t("owner") : t("viewer");
   els.ownerBar.hidden = state.role !== "owner";
+  const uploadHead = document.querySelector("#upload h2");
+  if (uploadHead) uploadHead.textContent = state.editingId ? t("editTitle") : t("uploadTitle");
 }
 
 function visibleWorks() {
@@ -165,7 +178,9 @@ function srcOf(work) {
 }
 
 function posterOf(work) {
-  return work.poster || (work.type === "image" ? srcOf(work) : "");
+  if (state.objectUrls.has(`${work.id}::poster`)) return state.objectUrls.get(`${work.id}::poster`);
+  if (work.poster) return work.poster;
+  return work.type === "image" ? srcOf(work) : "";
 }
 
 function refsOf(work) {
@@ -268,28 +283,47 @@ function renderStage() {
     `
     : "";
 
+  const promptEn = localized(work.prompt, "en");
+  const promptZh = localized(work.prompt, "zh");
+  const showRails = !state.compare && Boolean(promptEn || promptZh);
+  els.stage.dataset.rails = showRails ? "true" : "false";
+
   const plateMedia = work.type === "video"
-    ? `<video src="${src}" poster="${poster}" playsinline muted loop autoplay></video>
+    ? `<video class="plate-media" src="${src}" poster="${poster}" playsinline muted loop autoplay></video>
        <button class="play" type="button" data-toggle-play aria-label="${t("pause")}">${icon("pause")}</button>`
-    : `<img src="${src}" alt="${title}">`;
+    : `<img class="plate-media" src="${src}" alt="${title}">`;
+
+  const rail = (side, text) => showRails
+    ? `<aside class="prompt-rail" data-side="${side}"><div class="prompt-rail__body">${escapeHtml(text)}</div></aside>`
+    : "";
 
   els.media.innerHTML = `
     <div class="bloom" aria-hidden="true"><img src="${bloom}" alt=""></div>
     <div class="stage-planes">
       ${refBlock}
+      ${rail("en", promptEn)}
       <div class="plate">
+        <button class="hit prev" type="button" data-prev aria-label="${t("prev")}"></button>
         ${state.compare ? `<span class="plate-kicker">${t("resultLabel")}</span>` : ""}
         ${plateMedia}
+        <button class="hit next" type="button" data-next aria-label="${t("next")}"></button>
       </div>
+      ${rail("zh", promptZh)}
     </div>
   `;
 
-  const main = els.media.querySelector(".plate img, .plate video");
+  const main = els.media.querySelector(".plate-media");
   if (main) {
-    main.addEventListener("load", () => applyOrient(main));
-    main.addEventListener("loadedmetadata", () => applyOrient(main));
-    if (main.complete || main.readyState >= 1) applyOrient(main);
+    const sync = () => {
+      applyOrient(main);
+      syncPromptRails();
+    };
+    main.addEventListener("load", sync);
+    main.addEventListener("loadedmetadata", sync);
+    main.addEventListener("resize", sync);
+    if (main.complete || main.readyState >= 1) sync();
   }
+  window.requestAnimationFrame(syncPromptRails);
 
   if (work.type === "video") {
     const video = els.media.querySelector(".plate video");
@@ -304,7 +338,6 @@ function renderStage() {
   }
 
   els.models.textContent = (work.models || []).join("  ");
-  els.prompt.textContent = localized(work.prompt, state.lang);
   const liked = Boolean(state.liked[work.id]);
   els.like.setAttribute("aria-pressed", liked ? "true" : "false");
   els.like.setAttribute("aria-label", t("like"));
@@ -336,6 +369,37 @@ function renderStage() {
   const active = els.strip.querySelector("[aria-current='true']");
   if (active) {
     active.scrollIntoView({ inline: "center", block: "nearest", behavior: reduceMotion ? "auto" : "smooth" });
+  }
+  fillMissingPosters(list);
+}
+
+function syncPromptRails() {
+  const mediaEl = els.media.querySelector(".plate-media");
+  const rails = els.media.querySelectorAll(".prompt-rail");
+  if (!mediaEl || !rails.length) return;
+  const height = Math.round(mediaEl.getBoundingClientRect().height);
+  if (!height) return;
+  rails.forEach((rail) => {
+    rail.style.setProperty("--rail-h", `${height}px`);
+    rail.style.height = `${height}px`;
+  });
+}
+
+async function fillMissingPosters(list) {
+  for (const item of list) {
+    if (item.type !== "video") continue;
+    if (posterOf(item)) continue;
+    const src = srcOf(item);
+    if (!src) continue;
+    const blob = await captureVideoPoster(src);
+    if (!blob) continue;
+    const url = URL.createObjectURL(blob);
+    state.objectUrls.set(`${item.id}::poster`, url);
+    item.poster = url;
+    const thumb = els.strip.querySelector(`[data-index] img`);
+    const index = list.indexOf(item);
+    const button = els.strip.querySelector(`[data-index="${index}"] img`);
+    if (button) button.src = url;
   }
 }
 
@@ -506,42 +570,135 @@ function resetUpload() {
   els.fileName.textContent = "";
   renderChips();
   setRefMode(false);
+  state.editingId = "";
+}
+
+async function persistDraft() {
+  saveDraftMeta({
+    editingId: state.editingId,
+    title: els.titleInput.value,
+    models: pendingModels,
+    promptZh: els.promptZh.value,
+    promptEn: els.promptEn.value,
+    hasRefs,
+    fileName: pendingFile ? pendingFile.name : "",
+    fileType: pendingFile ? pendingFile.type : "",
+  });
+  if (!state.editingId) {
+    await saveDraftBlobs(pendingFile, pendingRefs.map((item) => item.file));
+  }
+}
+
+async function applyDraftFields(meta, blobs) {
+  pendingModels = Array.isArray(meta?.models) ? meta.models : [];
+  els.titleInput.value = meta?.title || "";
+  els.promptZh.value = meta?.promptZh || "";
+  els.promptEn.value = meta?.promptEn || "";
+  renderChips();
+  setRefMode(Boolean(meta?.hasRefs));
+  if (blobs?.file && blobs.file.blob) {
+    pendingFile = blobToFile(blobs.file.blob, blobs.file.name || meta?.fileName || "work", blobs.file.type || meta?.fileType);
+    els.fileName.textContent = pendingFile.name;
+  }
+  pendingRefs.forEach((item) => URL.revokeObjectURL(item.url));
+  pendingRefs = (blobs?.refs || []).map((rec) => ({
+    file: blobToFile(rec.blob, rec.name || "ref.jpg", rec.type),
+    url: URL.createObjectURL(rec.blob),
+  }));
+  renderRefPreviews();
+}
+
+async function restoreDraft() {
+  const meta = loadDraftMeta();
+  const blobs = await loadDraftBlobs();
+  if (meta?.editingId) {
+    const work = state.works.find((item) => item.id === meta.editingId);
+    if (work) {
+      openEditor(work);
+      await applyDraftFields(meta, { file: blobs.file, refs: [] });
+      return;
+    }
+  }
+  resetUpload();
+  if (!meta && !blobs.file) return;
+  await applyDraftFields(meta, blobs);
+}
+
+function openEditor(work) {
+  resetUpload();
+  state.editingId = work.id;
+  els.titleInput.value = localized(work.title, "zh") || localized(work.title, "en");
+  pendingModels = [...(work.models || [])];
+  els.promptZh.value = localized(work.prompt, "zh");
+  els.promptEn.value = localized(work.prompt, "en");
+  els.fileName.textContent = t("keepFile");
+  renderChips();
+  setRefMode(refsOf(work).length > 0);
+  els.upload.showModal();
 }
 
 async function handleUpload(event) {
   event.preventDefault();
-  if (!pendingFile) {
+  addModelFromInput();
+  const title = els.titleInput.value.trim();
+  const prompt = {
+    zh: els.promptZh.value.trim(),
+    en: els.promptEn.value.trim(),
+  };
+  const refFiles = hasRefs ? pendingRefs.map((item) => item.file) : [];
+  const existing = state.editingId
+    ? state.works.find((item) => item.id === state.editingId)
+    : null;
+
+  if (!existing && !pendingFile) {
     toast(t("needFile"));
     return;
   }
-  addModelFromInput();
-  const isVideo = pendingFile.type.startsWith("video/");
-  const title = els.titleInput.value.trim();
-  const prompt = els.promptInput.value.trim();
-  const workId = crypto.randomUUID();
-  const refFiles = hasRefs ? pendingRefs.map((item) => item.file) : [];
-  const work = {
+
+  const sourceFile = pendingFile;
+  const isVideo = sourceFile
+    ? sourceFile.type.startsWith("video/")
+    : existing?.type === "video";
+  let posterFile = null;
+  if (sourceFile && isVideo) {
+    posterFile = blobToFile(await captureVideoPoster(sourceFile), "poster.jpg", "image/jpeg");
+  }
+
+  const workId = existing ? existing.id : crypto.randomUUID();
+  const work = existing || {
     id: workId,
-    type: isVideo ? "video" : "image",
-    title: { zh: title, en: title },
-    models: [...pendingModels],
-    prompt: { zh: prompt, en: prompt },
     createdAt: new Date().toISOString().slice(0, 10),
     likes: 0,
-    local: true,
-    filename: pendingFile.name,
-    refs: refFiles.map((_, i) => ({ key: `${workId}::ref::${i}` })),
   };
 
-  await saveLocalWork(work, pendingFile, refFiles);
-  const url = URL.createObjectURL(pendingFile);
-  state.objectUrls.set(work.id, url);
+  work.type = sourceFile ? (isVideo ? "video" : "image") : (existing.type || "image");
+  work.title = { zh: title, en: title };
+  work.models = [...pendingModels];
+  work.prompt = prompt;
+  work.local = true;
+  if (sourceFile) work.filename = sourceFile.name;
+  if (refFiles.length) {
+    work.refs = refFiles.map((_, i) => ({ key: `${workId}::ref::${i}` }));
+  } else if (!hasRefs) {
+    work.refs = [];
+  }
+
+  await saveLocalWork(work, sourceFile, refFiles, posterFile);
+  if (sourceFile) {
+    if (state.objectUrls.has(work.id)) URL.revokeObjectURL(state.objectUrls.get(work.id));
+    state.objectUrls.set(work.id, URL.createObjectURL(sourceFile));
+  }
+  if (posterFile) {
+    const posterUrl = URL.createObjectURL(posterFile);
+    state.objectUrls.set(`${work.id}::poster`, posterUrl);
+    work.poster = posterUrl;
+  }
   refFiles.forEach((file, i) => {
     state.objectUrls.set(`${workId}::ref::${i}`, URL.createObjectURL(file));
   });
-  state.works.unshift(work);
+  if (!existing) state.works.unshift(work);
 
-  const remote = await tryPersistToServer(work, pendingFile, refFiles);
+  const remote = await tryPersistToServer(work, sourceFile, refFiles, posterFile);
   if (remote.ok && remote.remote && remote.remote.src) {
     work.src = remote.remote.src;
     work.poster = remote.remote.poster || work.poster;
@@ -553,7 +710,7 @@ async function handleUpload(event) {
   let published = false;
   if (token && state.site) {
     try {
-      const remoteWork = await publishWork(state.site, token, work, pendingFile, refFiles);
+      const remoteWork = await publishWork(state.site, token, work, sourceFile, refFiles, posterFile);
       Object.assign(work, remoteWork);
       work.local = false;
       published = true;
@@ -563,11 +720,15 @@ async function handleUpload(event) {
   }
 
   state.cat = work.type;
-  state.index = 0;
+  if (!existing) state.index = 0;
+  skipDraftPersist = true;
   els.upload.close();
   resetUpload();
+  await clearDraftBlobs();
+  clearDraftMeta();
+  skipDraftPersist = false;
   if (published) toast(t("published"));
-  else if (!token) toast(t("saved"));
+  else toast(existing ? t("savedEdit") : t("saved"));
   renderStage();
 }
 
@@ -623,9 +784,13 @@ function bind() {
   });
   els.like.addEventListener("click", toggleLike);
   els.refsBtn.addEventListener("click", toggleCompare);
-  els.uploadOpen.addEventListener("click", () => {
-    resetUpload();
+  els.uploadOpen.addEventListener("click", async () => {
+    await restoreDraft();
     els.upload.showModal();
+  });
+  els.editOpen.addEventListener("click", () => {
+    const work = currentWork();
+    if (work) openEditor(work);
   });
   els.exportBtn.addEventListener("click", exportList);
   els.leaveOwner.addEventListener("click", leaveOwner);
@@ -637,17 +802,15 @@ function bind() {
     updatePublishStatus();
   });
   els.likesOpen.addEventListener("click", openLikesBoard);
-  els.emptyAction.addEventListener("click", () => {
-    if (state.role === "owner") {
-      resetUpload();
-      els.upload.showModal();
-    }
+  els.emptyAction.addEventListener("click", async () => {
+    if (state.role !== "owner") return;
+    await restoreDraft();
+    els.upload.showModal();
   });
 
-  document.querySelector("[data-prev]").addEventListener("click", () => goTo(state.index - 1));
-  document.querySelector("[data-next]").addEventListener("click", () => goTo(state.index + 1));
-
   els.stage.addEventListener("click", (event) => {
+    if (event.target.closest("[data-prev]")) goTo(state.index - 1);
+    if (event.target.closest("[data-next]")) goTo(state.index + 1);
     if (event.target.closest("[data-toggle-play]")) togglePlay();
     const refThumb = event.target.closest("[data-ref-index]");
     if (refThumb) {
@@ -678,9 +841,16 @@ function bind() {
   });
 
   els.uploadForm.addEventListener("submit", handleUpload);
+  els.upload.addEventListener("close", () => {
+    if (!skipDraftPersist) persistDraft();
+  });
+  ["input", "change"].forEach((type) => {
+    els.uploadForm.addEventListener(type, () => persistDraft());
+  });
   els.file.addEventListener("change", () => {
     pendingFile = els.file.files[0] || null;
     els.fileName.textContent = pendingFile ? pendingFile.name : "";
+    persistDraft();
   });
   els.drop.addEventListener("click", () => els.file.click());
   els.drop.addEventListener("dragover", (event) => {
@@ -761,10 +931,12 @@ function bind() {
     touchX = event.changedTouches[0].clientX;
   }, { passive: true });
   els.stage.addEventListener("touchend", (event) => {
+    if (event.target.closest(".prompt-rail")) return;
     const dx = event.changedTouches[0].clientX - touchX;
     if (Math.abs(dx) < 48) return;
     goTo(state.index + (dx < 0 ? 1 : -1));
   }, { passive: true });
+  window.addEventListener("resize", syncPromptRails);
 
   document.querySelector("[data-delete]").addEventListener("click", deleteCurrent);
 }
@@ -847,6 +1019,8 @@ async function hydrate() {
       const blob = await loadBlob(work.id);
       if (blob) state.objectUrls.set(work.id, URL.createObjectURL(blob));
     }
+    const posterBlob = await loadBlob(`${work.id}::poster`);
+    if (posterBlob) state.objectUrls.set(`${work.id}::poster`, URL.createObjectURL(posterBlob));
     const localRefs = work.refs || [];
     for (let i = 0; i < localRefs.length; i += 1) {
       const item = localRefs[i];

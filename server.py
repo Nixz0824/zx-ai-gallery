@@ -99,6 +99,14 @@ class Handler(SimpleHTTPRequestHandler):
                 dest = ref_dir / f"{dest.stem}-{uuid.uuid4().hex[:6]}{dest.suffix}"
             dest.write_bytes(item["content"])
             refs.append(dest.relative_to(ROOT).as_posix())
+        poster_path = meta.get("poster") or ""
+        posters = files.get("poster") or []
+        if posters:
+            poster_dir = MEDIA / "posters"
+            poster_dir.mkdir(parents=True, exist_ok=True)
+            dest = poster_dir / f"{meta.get('id') or uuid.uuid4().hex}.jpg"
+            dest.write_bytes(posters[0]["content"])
+            poster_path = dest.relative_to(ROOT).as_posix()
         if not refs:
             existing = meta.get("refs") or []
             refs = [item if isinstance(item, str) else item.get("src") for item in existing]
@@ -108,7 +116,7 @@ class Handler(SimpleHTTPRequestHandler):
             "id": meta.get("id") or uuid.uuid4().hex,
             "type": work_type,
             "src": src,
-            "poster": meta.get("poster") or "",
+            "poster": poster_path,
             "title": meta.get("title") or "",
             "models": meta.get("models") or [],
             "prompt": meta.get("prompt") or "",

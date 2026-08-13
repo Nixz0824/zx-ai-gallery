@@ -234,6 +234,38 @@ a {
   gap: var(--space-20);
 }
 
+.stage[data-rails="true"] .stage-planes {
+  grid-template-columns: minmax(168px, 1fr) minmax(0, 2.2fr) minmax(168px, 1fr);
+  gap: var(--space-16);
+  align-items: center;
+}
+
+.prompt-rail {
+  align-self: center;
+  width: 100%;
+  height: var(--rail-h, 70%);
+  overflow: hidden;
+  position: relative;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 36px, #000 calc(100% - 36px), transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 36px, #000 calc(100% - 36px), transparent 100%);
+}
+
+.prompt-rail__body {
+  height: 100%;
+  overflow-y: auto;
+  padding: 36px 4px;
+  font-size: var(--text-sm);
+  line-height: 1.45;
+  color: var(--color-ink-2);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  scrollbar-width: none;
+}
+
+.prompt-rail__body::-webkit-scrollbar {
+  display: none;
+}
+
 .plate,
 .ref-plate {
   position: relative;
@@ -325,8 +357,8 @@ a {
 
 .hit {
   position: absolute;
-  top: var(--nav-h);
-  bottom: calc(var(--strip-h) + var(--caption-h));
+  top: 0;
+  bottom: 0;
   width: 18%;
   z-index: 4;
   cursor: w-resize;
@@ -373,13 +405,13 @@ a {
   justify-content: space-between;
   align-items: flex-end;
   gap: var(--space-24);
-  padding: var(--space-32) var(--page-gutter) var(--space-16);
-  background: linear-gradient(to top, oklch(8% 0.014 55 / 0.88) 18%, oklch(8% 0.014 55 / 0));
+  padding: var(--space-12) var(--page-gutter) var(--space-12);
+  background: linear-gradient(to top, oklch(8% 0.014 55 / 0.72), oklch(8% 0.014 55 / 0));
 }
 
 .meta {
   min-width: 0;
-  max-width: 62ch;
+  max-width: 40ch;
 }
 
 .models {
@@ -391,10 +423,7 @@ a {
 }
 
 .prompt {
-  margin: 0;
-  font-size: var(--text-sm);
-  line-height: 1.45;
-  color: var(--color-ink-2);
+  display: none;
 }
 
 .caption-end {
@@ -695,6 +724,22 @@ dialog::backdrop {
   resize: vertical;
 }
 
+.prompt-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-16);
+}
+
+.prompt-grid textarea {
+  min-height: 22rem;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  border: 1px solid var(--color-rule);
+  border-bottom: 1px solid var(--color-rule);
+  padding: var(--space-12);
+  background: oklch(8% 0.014 55 / 0.35);
+}
+
 .form-error {
   min-height: 1.2em;
   margin: 0 0 var(--space-16);
@@ -703,7 +748,7 @@ dialog::backdrop {
 }
 
 .drawer {
-  width: min(100vw, 420px);
+  width: min(100vw, 920px);
   max-width: 100vw;
   height: 100dvh;
   max-height: 100dvh;
@@ -955,6 +1000,28 @@ html.is-shutter .gate-bottom {
   .drawer {
     width: 100vw;
     padding-inline: var(--space-16);
+  }
+
+  .prompt-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .prompt-grid textarea {
+    min-height: 14rem;
+  }
+
+  .stage[data-rails="true"] .stage-planes {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 1fr) auto auto;
+  }
+
+  .plate { order: 1; }
+  .prompt-rail[data-side="en"] { order: 2; }
+  .prompt-rail[data-side="zh"] { order: 3; }
+
+  .prompt-rail {
+    height: 28vh;
+    max-height: 220px;
   }
 
   .hit {

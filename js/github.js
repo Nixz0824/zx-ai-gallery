@@ -101,7 +101,7 @@ function extOf(file, fallback) {
   return match ? match[1].toLowerCase() : fallback;
 }
 
-export async function publishWork(site, token, work, file, refFiles = []) {
+export async function publishWork(site, token, work, file, refFiles = [], posterFile = null) {
   if (file && file.size > 80 * 1024 * 1024) {
     throw new Error("file too large for GitHub");
   }
@@ -117,6 +117,13 @@ export async function publishWork(site, token, work, file, refFiles = []) {
     await putContent(site, token, path, await fileToBytes(file), `add work ${work.id}`, existing && existing.sha);
     published.src = path;
     if (work.type === "image") published.poster = "";
+  }
+
+  if (posterFile) {
+    const path = `media/posters/${work.id}.jpg`;
+    const existingPoster = await getContent(site, token, path);
+    await putContent(site, token, path, await fileToBytes(posterFile), `add poster ${work.id}`, existingPoster && existingPoster.sha);
+    published.poster = path;
   }
 
   const refs = [];

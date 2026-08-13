@@ -125,17 +125,82 @@ export async function loadLocalWorks() {
 }
 
 export async function loadBlob(id) {
+  const rec = await loadBlobRecord(id);
+  return rec ? rec.blob : null;
+}
+
+export async function loadBlobRecord(id) {
   const db = await openDb();
   return new Promise((resolve, reject) => {
     const req = db.transaction(BLOBS_STORE, "readonly").objectStore(BLOBS_STORE).get(id);
-    req.onsuccess = () => resolve(req.result ? req.result.blob : null);
+    req.onsuccess = () => resolve(req.result || null);
     req.onerror = () => reject(req.error);
   });
 }
 
-export async function saveLocalWork(work, blob, refBlobs = []) {
+const DRAFT_META_KEY = "zx-upload-draft";
+
+export function saveDraftMeta(meta) {
+  sessionStorage.setItem(DRAFT_META_KEY, JSON.stringify(meta));
+}
+
+export function loadDraftMeta() {
+  try {
+    return JSON.parse(sessionStorage.getItem(DRAFT_META_KEY) || "null");
+  } catch {
+    return null;
+  }
+}
+
+export function clearDraftMeta() {
+  sessionStorage.removeItem(DRAFT_META_KEY);
+}
+
+export async function saveDraftBlobs(file, refFiles = []) {
+  const all = await idbGetAll(BLOBS_STORE);
+  for (const item of all) {
+    if (String(item.id).startsWith("draft::")) await idbDelete(BLOBS_STORE, item.id);
+  }
+  if (file) {
+    await idbPut(BLOBS_STORE, {
+      id: "draft::file",
+      blob: file,
+      name: file.name,
+      type: file.type,
+    });
+  }
+  for (let i = 0; i < refFiles.length; i += 1) {
+    await idbPut(BLOBS_STORE, {
+      id: `draft::ref::${i}`,
+      blob: refFiles[i],
+      name: refFiles[i].name,
+      type: refFiles[i].type,
+    });
+  }
+}
+
+export async function loadDraftBlobs() {
+  const fileRec = await loadBlobRecord("draft::file");
+  const refs = [];
+  for (let i = 0; i < 24; i += 1) {
+    const rec = await loadBlobRecord(`draft::ref::${i}`);
+    if (!rec) break;
+    refs.push(rec);
+  }
+  return { file: fileRec, refs };
+}
+
+export async function clearDraftBlobs() {
+  const all = await idbGetAll(BLOBS_STORE);
+  for (const item of all) {
+    if (String(item.id).startsWith("draft::")) await idbDelete(BLOBS_STORE, item.id);
+  }
+}
+
+export async function saveLocalWork(work, blob, refBlobs = [], posterBlob = null) {
   await idbPut(WORKS_STORE, work);
   if (blob) await idbPut(BLOBS_STORE, { id: work.id, blob });
+  if (posterBlob) await idbPut(BLOBS_STORE, { id: `${work.id}::poster`, blob: posterBlob });
   for (let i = 0; i < refBlobs.length; i += 1) {
     await idbPut(BLOBS_STORE, { id: `${work.id}::ref::${i}`, blob: refBlobs[i] });
   }
@@ -146,13 +211,13 @@ export async function removeLocalWork(id) {
   await idbDelete(BLOBS_STORE, id);
   const all = await idbGetAll(BLOBS_STORE);
   for (const item of all) {
-    if (String(item.id).startsWith(`${id}::ref::`)) {
+    if (String(item.id).startsWith(`${id}::ref::`) || item.id === `${id}::poster`) {
       await idbDelete(BLOBS_STORE, item.id);
     }
   }
 }
 
-export async function tryPersistToServer(work, file, refFiles = []) {
+export async function tryPersistToServer(work, file, refFiles = [], posterFile = null) {
   const body = new FormData();
   body.append("meta", JSON.stringify({
     id: work.id,
@@ -166,6 +231,7 @@ export async function tryPersistToServer(work, file, refFiles = []) {
     refs: work.refs || [],
   }));
   if (file) body.append("file", file, file.name);
+  if (posterFile) body.append("poster", posterFile, "poster.jpg");
   refFiles.forEach((refFile) => {
     body.append("refs", refFile, refFile.name);
   });
