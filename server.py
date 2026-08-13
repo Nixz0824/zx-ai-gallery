@@ -64,6 +64,11 @@ def extract_poster(video_path: Path, dest: Path) -> bool:
         return False
 
 
+def stored_media_path(value) -> bool:
+    text = str(value or "")
+    return bool(text) and not text.startswith("blob:") and not text.startswith("data:")
+
+
 def safe_name(name: str) -> str:
     stem = Path(name).name
     stem = re.sub(r"[^A-Za-z0-9._-]+", "-", stem).strip(".-")
@@ -104,12 +109,16 @@ class Handler(SimpleHTTPRequestHandler):
             self.send_error(400, "bad meta")
             return
 
-        work_type = "video" if meta.get("type") == "video" else "image"
+        work_id = meta.get("id") or uuid.uuid4().hex
+        existing_work = next((item for item in load_works() if item.get("id") == work_id), {}) or {}
+        work_type = "video" if meta.get("type") == "video" else existing_work.get("type") or "image"
         folder = MEDIA / ("videos" if work_type == "video" else "images")
         folder.mkdir(parents=True, exist_ok=True)
         uploads = files.get("file") or []
         upload = uploads[0] if uploads else None
-        src = meta.get("src") or ""
+        src = existing_work.get("src") or ""
+        if stored_media_path(meta.get("src")):
+            src = meta.get("src")
         if upload:
             filename = safe_name(upload["filename"])
             dest = folder / filename
@@ -128,34 +137,38 @@ class Handler(SimpleHTTPRequestHandler):
                 dest = ref_dir / f"{dest.stem}-{uuid.uuid4().hex[:6]}{dest.suffix}"
             dest.write_bytes(item["content"])
             refs.append(dest.relative_to(ROOT).as_posix())
-        poster_path = meta.get("poster") or ""
+        if not refs:
+            incoming = meta.get("refs") or []
+            refs = [item if isinstance(item, str) else (item or {}).get("src") for item in incoming]
+            refs = [item for item in refs if stored_media_path(item)]
+        if not refs:
+            refs = list(existing_work.get("refs") or [])
+        poster_path = existing_work.get("poster") or ""
+        if stored_media_path(meta.get("poster")):
+            poster_path = meta.get("poster")
         posters = files.get("poster") or []
         if posters:
             poster_dir = MEDIA / "posters"
             poster_dir.mkdir(parents=True, exist_ok=True)
-            dest = poster_dir / f"{meta.get('id') or uuid.uuid4().hex}.jpg"
+            dest = poster_dir / f"{work_id}.jpg"
             dest.write_bytes(posters[0]["content"])
             poster_path = dest.relative_to(ROOT).as_posix()
         if work_type == "video" and not poster_path and src:
             poster_dir = MEDIA / "posters"
-            dest = poster_dir / f"{meta.get('id') or uuid.uuid4().hex}.jpg"
+            dest = poster_dir / f"{work_id}.jpg"
             if extract_poster(ROOT / src, dest):
                 poster_path = dest.relative_to(ROOT).as_posix()
-        if not refs:
-            existing = meta.get("refs") or []
-            refs = [item if isinstance(item, str) else item.get("src") for item in existing]
-            refs = [item for item in refs if item]
 
         work = {
-            "id": meta.get("id") or uuid.uuid4().hex,
+            "id": work_id,
             "type": work_type,
             "src": src,
             "poster": poster_path,
-            "title": meta.get("title") or "",
-            "models": meta.get("models") or [],
-            "prompt": meta.get("prompt") or "",
-            "createdAt": meta.get("createdAt") or "",
-            "likes": int(meta.get("likes") or 0),
+            "title": meta.get("title") or existing_work.get("title") or "",
+            "models": meta.get("models") if meta.get("models") is not None else existing_work.get("models") or [],
+            "prompt": meta.get("prompt") or existing_work.get("prompt") or "",
+            "createdAt": meta.get("createdAt") or existing_work.get("createdAt") or "",
+            "likes": int(meta.get("likes") if meta.get("likes") is not None else existing_work.get("likes") or 0),
             "refs": refs,
         }
         works = [item for item in load_works() if item.get("id") != work["id"]]

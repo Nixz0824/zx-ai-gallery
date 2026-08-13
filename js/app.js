@@ -20,6 +20,7 @@ import {
   saveRole,
   loadPlayer,
   savePlayer,
+  isStoredPath,
   downloadJson,
   saveDraftMeta,
   loadDraftMeta,
@@ -186,12 +187,12 @@ function likesOf(work) {
 
 function srcOf(work) {
   if (state.objectUrls.has(work.id)) return state.objectUrls.get(work.id);
-  return work.src;
+  return isStoredPath(work.src) ? work.src : "";
 }
 
 function posterOf(work) {
   if (state.objectUrls.has(`${work.id}::poster`)) return state.objectUrls.get(`${work.id}::poster`);
-  if (work.poster) return work.poster;
+  if (isStoredPath(work.poster)) return work.poster;
   return work.type === "image" ? srcOf(work) : "";
 }
 
@@ -380,6 +381,18 @@ function renderStage() {
 
   els.strip.innerHTML = `<div class="strip-works">${thumbs}</div>${refDock}`;
   els.strip.querySelectorAll(".thumb video").forEach(primeThumbVideo);
+  els.strip.querySelectorAll(".thumb img").forEach((img) => {
+    img.addEventListener("error", () => {
+      if (img.dataset.thumbType !== "video" || !img.dataset.thumbSrc) return;
+      const video = document.createElement("video");
+      video.src = img.dataset.thumbSrc;
+      video.muted = true;
+      video.playsInline = true;
+      video.preload = "auto";
+      img.replaceWith(video);
+      primeThumbVideo(video);
+    }, { once: true });
+  });
 
   const active = els.strip.querySelector("[aria-current='true']");
   if (active) {
@@ -390,7 +403,7 @@ function renderStage() {
 
 function thumbMarkup(item) {
   const poster = posterOf(item);
-  if (poster) return `<img src="${poster}" alt="">`;
+  if (poster) return `<img src="${poster}" alt="" data-thumb-src="${srcOf(item)}" data-thumb-type="${item.type}">`;
   if (item.type === "video") {
     return `<video src="${srcOf(item)}" muted playsinline preload="auto"></video>`;
   }
@@ -456,7 +469,7 @@ async function applyPoster(work, blob) {
   const url = URL.createObjectURL(blob);
   state.objectUrls.set(key, url);
   if (prev && prev.startsWith("blob:")) URL.revokeObjectURL(prev);
-  work.poster = url;
+  if (!isStoredPath(work.poster)) work.poster = "";
   const list = visibleWorks();
   const index = list.findIndex((item) => item.id === work.id);
   const button = index >= 0 ? els.strip.querySelector(`[data-index="${index}"]`) : null;
@@ -1368,13 +1381,22 @@ async function hydrate() {
   const merged = new Map();
   catalog.forEach((work) => merged.set(work.id, work));
   for (const work of local) {
-    merged.set(work.id, work);
-    if (!work.src) {
+    const published = merged.get(work.id);
+    merged.set(work.id, {
+      ...published,
+      ...work,
+      src: isStoredPath(work.src) ? work.src : (published?.src || ""),
+      poster: isStoredPath(work.poster) ? work.poster : (published?.poster || ""),
+      refs: (work.refs && work.refs.length) ? work.refs : (published?.refs || []),
+    });
+    if (!isStoredPath(work.src)) {
       const blob = await loadBlob(work.id);
       if (blob) state.objectUrls.set(work.id, URL.createObjectURL(blob));
     }
     const posterBlob = await loadBlob(`${work.id}::poster`);
-    if (posterBlob) state.objectUrls.set(`${work.id}::poster`, URL.createObjectURL(posterBlob));
+    if (posterBlob && !isStoredPath(merged.get(work.id).poster)) {
+      state.objectUrls.set(`${work.id}::poster`, URL.createObjectURL(posterBlob));
+    }
     const localRefs = work.refs || [];
     for (let i = 0; i < localRefs.length; i += 1) {
       const item = localRefs[i];

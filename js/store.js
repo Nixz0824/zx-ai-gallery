@@ -242,7 +242,7 @@ export async function removeLocalWork(id) {
   }
 }
 
-function isStoredPath(value) {
+export function isStoredPath(value) {
   const text = String(value || "");
   return Boolean(text) && !text.startsWith("blob:") && !text.startsWith("data:");
 }
