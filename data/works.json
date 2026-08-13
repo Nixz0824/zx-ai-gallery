@@ -1,0 +1,138 @@
+{
+  "works": [
+    {
+      "id": "canal-dusk",
+      "type": "image",
+      "src": "media/images/canal-dusk.jpg",
+      "title": { "zh": "运河暮色", "en": "Canal Dusk" },
+      "models": ["Flux", "Midjourney"],
+      "prompt": {
+        "zh": "雾中运河边的孤单身影 钠灯 35mm 胶片颗粒 冷暖对比",
+        "en": "A lone figure by a fogged canal, sodium lamps, 35mm grain, cold-warm contrast"
+      },
+      "createdAt": "2026-08-12",
+      "likes": 0,
+      "sample": true,
+      "refs": [
+        "media/refs/canal-scout.jpg",
+        "media/refs/wall-texture.jpg"
+      ]
+    },
+    {
+      "id": "alley-night",
+      "type": "image",
+      "src": "media/images/alley-night.jpg",
+      "title": { "zh": "巷夜", "en": "Alley Night" },
+      "models": ["Flux"],
+      "prompt": {
+        "zh": "窄巷雨夜 一扇暖窗 竖构图 胶片颗粒",
+        "en": "Rain in a narrow alley, one warm window, vertical frame, film grain"
+      },
+      "createdAt": "2026-08-13",
+      "likes": 0,
+      "sample": true
+    },
+    {
+      "id": "rain-cinema",
+      "type": "image",
+      "src": "media/images/rain-cinema.jpg",
+      "title": { "zh": "雨夜入口", "en": "Rain Entrance" },
+      "models": ["Flux"],
+      "prompt": {
+        "zh": "雨夜老剧院入口 湿沥青反光 冷蓝调 胶片颗粒",
+        "en": "Old cinema entrance in rain, wet asphalt, cool teal grade, film grain"
+      },
+      "createdAt": "2026-08-11",
+      "likes": 0,
+      "sample": true
+    },
+    {
+      "id": "empty-stage",
+      "type": "image",
+      "src": "media/images/empty-stage.jpg",
+      "title": { "zh": "空舞台", "en": "Empty Stage" },
+      "models": ["Midjourney"],
+      "prompt": {
+        "zh": "旧剧场空舞台 丝绒幕 胶片卷 一束灰尘光",
+        "en": "Empty old theater stage, velvet curtains, film reels, one shaft of dust light"
+      },
+      "createdAt": "2026-08-10",
+      "likes": 0,
+      "sample": true
+    },
+    {
+      "id": "night-train-still",
+      "type": "image",
+      "src": "media/images/night-train.jpg",
+      "title": { "zh": "夜车", "en": "Night Car" },
+      "models": ["Flux", "Kling"],
+      "prompt": {
+        "zh": "夜间空列车车厢 窗外灯光拖影 暖钨丝灯 胶片颗粒",
+        "en": "Empty night train car, smeared window lights, warm tungsten, film grain"
+      },
+      "createdAt": "2026-08-09",
+      "likes": 0,
+      "sample": true
+    },
+    {
+      "id": "canal-drift",
+      "type": "video",
+      "src": "media/videos/canal-dusk.mp4",
+      "poster": "media/images/canal-dusk.jpg",
+      "title": { "zh": "运河漂移", "en": "Canal Drift" },
+      "models": ["Kling"],
+      "prompt": {
+        "zh": "沿雾河缓慢横移 钠灯呼吸 人物静止",
+        "en": "Slow lateral drift along a fogged canal, sodium glow breathing, figure still"
+      },
+      "createdAt": "2026-08-12",
+      "likes": 0,
+      "sample": true
+    },
+    {
+      "id": "night-train",
+      "type": "video",
+      "src": "media/videos/night-train.mp4",
+      "poster": "media/images/night-train.jpg",
+      "title": { "zh": "夜车推进", "en": "Night Push" },
+      "models": ["Kling", "Runway"],
+      "prompt": {
+        "zh": "空车厢缓慢前推 雨点停在玻璃 城市灯光拖过",
+        "en": "Slow push down an empty car, rain held on glass, city lights smearing past"
+      },
+      "createdAt": "2026-08-11",
+      "likes": 0,
+      "sample": true
+    },
+    {
+      "id": "rain-approach",
+      "type": "video",
+      "src": "media/videos/rain-cinema.mp4",
+      "poster": "media/images/rain-cinema.jpg",
+      "title": { "zh": "雨中靠近", "en": "Rain Approach" },
+      "models": ["Runway"],
+      "prompt": {
+        "zh": "雨夜缓缓推向剧院门口 地面反光微微晃动",
+        "en": "Slow push toward a rainy cinema door, wet ground reflections shifting"
+      },
+      "createdAt": "2026-08-10",
+      "likes": 0,
+      "sample": true
+    },
+    {
+      "id": "alley-drift",
+      "type": "video",
+      "src": "media/videos/alley-night.mp4",
+      "poster": "media/images/alley-night.jpg",
+      "title": { "zh": "巷夜上移", "en": "Alley Rise" },
+      "models": ["Kling"],
+      "prompt": {
+        "zh": "雨巷缓慢上移 窗光微闪 人物静止",
+        "en": "Slow rise in a rainy alley, window light flickering, figure still"
+      },
+      "createdAt": "2026-08-13",
+      "likes": 0,
+      "sample": true
+    }
+  ]
+}

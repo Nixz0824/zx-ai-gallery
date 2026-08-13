@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ZHANG XIN</title>
+    <meta name="description" content="ZHANG XIN">
+    <link rel="stylesheet" href="css/styles.css">
+  </head>
+  <body>
+    <div class="grain" aria-hidden="true"></div>
+    <div class="gate-top" aria-hidden="true"></div>
+    <div class="gate-bottom" aria-hidden="true"></div>
+
+    <header class="nav">
+      <a class="wordmark" href="./" data-i18n="title">ZHANG XIN</a>
+      <nav class="cats" aria-label="ZHANG XIN">
+        <button type="button" data-cat="image" data-i18n="image">图像</button>
+        <button type="button" data-cat="video" data-i18n="video">视频</button>
+      </nav>
+      <div class="nav-end">
+        <div class="lang" role="group" aria-label="Language">
+          <button type="button" data-lang="zh" data-i18n="langZh">中</button>
+          <button type="button" data-lang="en" data-i18n="langEn">EN</button>
+        </div>
+        <button type="button" class="role" data-role data-i18n="viewer">浏览</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="stage" data-kind="image">
+        <button class="hit prev" type="button" data-prev data-i18n-aria="prev" aria-label="上一件"></button>
+        <button class="hit next" type="button" data-next data-i18n-aria="next" aria-label="下一件"></button>
+        <div class="stage-media"></div>
+        <div class="caption">
+          <div class="meta">
+            <p class="models" data-models></p>
+            <p class="prompt" data-prompt></p>
+          </div>
+          <div class="caption-end">
+            <button class="refs-btn" type="button" data-refs hidden></button>
+            <button class="icon-btn like-btn" type="button" data-like data-i18n-aria="like" aria-pressed="false" aria-label="喜欢">
+              <span data-like-icon></span>
+              <span class="like-count" data-like-count></span>
+            </button>
+            <span class="pager" data-pager></span>
+          </div>
+        </div>
+      </section>
+
+      <section class="empty" hidden>
+        <div class="empty-inner">
+          <div class="slide" aria-hidden="true"><div class="slide-void"></div></div>
+          <h1 data-i18n="emptyTitle">还没有作品</h1>
+          <p data-i18n="emptyBody">图像与视频会直接出现在这里</p>
+          <button class="text-link" type="button" data-empty-action data-i18n="emptyOwner" hidden>收入第一件作品</button>
+        </div>
+      </section>
+    </main>
+
+    <div class="strip" hidden></div>
+
+    <div class="owner-bar owner-only" hidden>
+      <button class="text-link" type="button" data-open-upload data-i18n="upload">上传</button>
+      <button class="text-link" type="button" data-delete data-i18n="delete">删除</button>
+      <button class="text-link" type="button" data-export data-i18n="export">导出清单</button>
+      <button class="text-link" type="button" data-likes-board data-i18n="likesBoard">点赞</button>
+      <button class="text-link" type="button" data-publish data-i18n="publish">发布设置</button>
+      <button class="text-link" type="button" data-leave-owner data-i18n="leaveOwner">回到浏览</button>
+    </div>
+
+    <dialog id="auth">
+      <form class="sheet" id="auth-form">
+        <h2 data-i18n="authTitle">本人</h2>
+        <div class="field">
+          <label for="github" data-i18n="githubLabel">GitHub 账户名</label>
+          <input id="github" name="github" autocomplete="username" data-i18n-ph="githubHint">
+        </div>
+        <p class="form-error" data-auth-error></p>
+        <button class="text-link" type="submit" data-i18n="enter">进入</button>
+      </form>
+    </dialog>
+
+    <dialog class="drawer" id="upload">
+      <form id="upload-form">
+        <h2 data-i18n="uploadTitle">上传作品</h2>
+        <label class="drop" data-drop>
+          <span data-i18n="drop">拖放作品文件或点击选择</span>
+          <input id="file" type="file" accept="image/*,video/*">
+        </label>
+        <p class="preview-name" data-file-name></p>
+        <div class="field">
+          <label for="work-title" data-i18n="titleLabel">标题</label>
+          <input id="work-title" data-i18n-ph="titlePh">
+        </div>
+        <div class="field">
+          <label for="work-models" data-i18n="modelsLabel">模型与平台</label>
+          <div class="chips" data-chips></div>
+          <input id="work-models" data-i18n-ph="modelsPh">
+        </div>
+        <div class="field">
+          <span data-i18n="refs">参考</span>
+          <p class="preview-name" data-i18n="refsHint">可选。用于对照原图、草图或气氛。</p>
+          <div class="ref-toggle" role="group">
+            <button type="button" data-ref-mode="off" aria-pressed="true" data-i18n="refsNone">无参考图</button>
+            <button type="button" data-ref-mode="on" aria-pressed="false" data-i18n="refsSome">有参考图</button>
+          </div>
+          <div class="ref-field" data-ref-field hidden>
+            <label class="drop" data-ref-drop>
+              <span data-i18n="refsDrop">拖入或选择参考图，可多张</span>
+              <input id="ref-files" type="file" accept="image/*" multiple>
+            </label>
+            <div class="ref-previews" data-ref-previews></div>
+          </div>
+        </div>
+        <div class="field">
+          <label for="work-prompt" data-i18n="promptLabel">提示词</label>
+          <textarea id="work-prompt" data-i18n-ph="promptPh"></textarea>
+        </div>
+        <button class="text-link" type="submit" data-i18n="save">收入档案</button>
+        <button class="text-link" type="button" data-close data-i18n="close">关闭</button>
+      </form>
+    </dialog>
+
+    <dialog id="publish">
+      <form class="sheet" id="publish-form">
+        <h2 data-i18n="publishTitle">发布到 GitHub</h2>
+        <p class="preview-name" data-i18n="tokenHint">只存在这台电脑的这个浏览器里。权限选 repo，用来把作品写入仓库。</p>
+        <div class="field">
+          <label for="gh-token" data-i18n="tokenLabel">GitHub 令牌</label>
+          <input id="gh-token" type="password" autocomplete="off">
+        </div>
+        <p class="form-error" data-publish-status></p>
+        <button class="text-link" type="submit" data-i18n="tokenSave">保存</button>
+        <button class="text-link" type="button" data-clear-token data-i18n="tokenClear">清除</button>
+        <a class="text-link" data-open-site href="#" target="_blank" rel="noreferrer" data-i18n="openSite">打开线上页</a>
+        <button class="text-link" type="button" data-close data-i18n="close">关闭</button>
+      </form>
+    </dialog>
+
+    <dialog id="likes">
+      <div class="sheet sheet-wide">
+        <h2 data-i18n="likesBoardTitle">点赞</h2>
+        <div data-likes-list></div>
+        <button class="text-link" type="button" data-close data-i18n="close">关闭</button>
+      </div>
+    </dialog>
+
+    <div class="toast" role="status" aria-live="polite"></div>
+    <script type="module" src="js/app.js"></script>
+  </body>
+</html>
