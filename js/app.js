@@ -130,6 +130,7 @@ let pendingRefs = [];
 let hasRefs = false;
 let toastTimer = 0;
 let skipDraftPersist = false;
+let draftEpoch = 0;
 let railObserver = null;
 let posterJobs = new Set();
 let scrubbing = false;
@@ -848,7 +849,16 @@ function resetUpload() {
   state.editingId = "";
 }
 
+async function discardDraft() {
+  draftEpoch += 1;
+  skipDraftPersist = true;
+  clearDraftMeta();
+  await clearDraftBlobs();
+}
+
 async function persistDraft() {
+  if (skipDraftPersist) return;
+  const epoch = draftEpoch;
   saveDraftMeta({
     editingId: state.editingId,
     title: els.titleInput.value,
@@ -859,8 +869,11 @@ async function persistDraft() {
     fileName: pendingFile ? pendingFile.name : "",
     fileType: pendingFile ? pendingFile.type : "",
   });
-  if (!state.editingId) {
-    await saveDraftBlobs(pendingFile, pendingRefs.map((item) => item.file));
+  if (state.editingId) return;
+  await saveDraftBlobs(pendingFile, pendingRefs.map((item) => item.file));
+  if (epoch !== draftEpoch || skipDraftPersist) {
+    clearDraftMeta();
+    await clearDraftBlobs();
   }
 }
 
@@ -886,7 +899,12 @@ async function applyDraftFields(meta, blobs) {
 async function restoreDraft() {
   const meta = loadDraftMeta();
   const blobs = await loadDraftBlobs();
-  if (meta?.editingId) {
+  if (!meta) {
+    if (blobs.file || blobs.refs.length) await clearDraftBlobs();
+    resetUpload();
+    return;
+  }
+  if (meta.editingId) {
     const work = state.works.find((item) => item.id === meta.editingId);
     if (work) {
       openEditor(work);
@@ -895,7 +913,6 @@ async function restoreDraft() {
     }
   }
   resetUpload();
-  if (!meta && !blobs.file) return;
   await applyDraftFields(meta, blobs);
 }
 
@@ -996,11 +1013,9 @@ async function handleUpload(event) {
 
   state.cat = work.type;
   if (!existing) state.index = 0;
-  skipDraftPersist = true;
+  await discardDraft();
   els.upload.close();
   resetUpload();
-  await clearDraftBlobs();
-  clearDraftMeta();
   skipDraftPersist = false;
   if (published) toast(t("published"));
   else toast(existing ? t("savedEdit") : t("saved"));
@@ -1177,12 +1192,14 @@ function bind() {
     if (!skipDraftPersist) persistDraft();
   });
   ["input", "change"].forEach((type) => {
-    els.uploadForm.addEventListener(type, () => persistDraft());
+    els.uploadForm.addEventListener(type, () => {
+      if (!skipDraftPersist && els.upload.open) persistDraft();
+    });
   });
   els.file.addEventListener("change", () => {
     pendingFile = els.file.files[0] || null;
     els.fileName.textContent = pendingFile ? pendingFile.name : "";
-    persistDraft();
+    if (!skipDraftPersist && els.upload.open) persistDraft();
   });
   els.drop.addEventListener("click", () => els.file.click());
   els.drop.addEventListener("dragover", (event) => {
