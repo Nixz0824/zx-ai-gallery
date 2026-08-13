@@ -18,6 +18,8 @@ import {
   saveLang,
   loadRole,
   saveRole,
+  loadPlayer,
+  savePlayer,
   downloadJson,
   saveDraftMeta,
   loadDraftMeta,
@@ -55,6 +57,7 @@ const state = {
   site: null,
   likeCounts: {},
   editingId: "",
+  player: loadPlayer(),
 };
 
 const els = {
@@ -129,6 +132,9 @@ let toastTimer = 0;
 let skipDraftPersist = false;
 let railObserver = null;
 let posterJobs = new Set();
+let scrubbing = false;
+let hideTransportTimer = 0;
+let absorbVideoClick = false;
 
 function t(key, vars) {
   const table = STRINGS[state.lang] || STRINGS.zh;
@@ -310,8 +316,11 @@ function renderStage() {
   els.stage.dataset.rails = showRails ? "true" : "false";
 
   const plateMedia = work.type === "video"
-    ? `<video class="plate-media" src="${src}" poster="${poster}" playsinline muted loop autoplay></video>
-       <button class="play" type="button" data-toggle-play aria-label="${t("pause")}">${icon("pause")}</button>`
+    ? `<div class="plate-frame">
+        <video class="plate-media" src="${src}" poster="${poster}" playsinline></video>
+        <div class="play-mark" aria-hidden="true">${icon("play")}</div>
+        ${transportMarkup()}
+      </div>`
     : `<img class="plate-media" src="${src}" alt="${title}">`;
 
   const rail = (side, text) => showRails
@@ -333,17 +342,7 @@ function renderStage() {
 
   watchPromptRails(els.media.querySelector(".plate-media"));
 
-  if (work.type === "video") {
-    const video = els.media.querySelector(".plate video");
-    video.play().catch(() => {
-      els.stage.dataset.paused = "true";
-      const btn = els.media.querySelector("[data-toggle-play]");
-      if (btn) {
-        btn.innerHTML = icon("play");
-        btn.setAttribute("aria-label", t("play"));
-      }
-    });
-  }
+  if (work.type === "video") bindPlateVideo(els.media.querySelector("video.plate-media"));
 
   els.models.textContent = (work.models || []).join("  ");
   const liked = Boolean(state.liked[work.id]);
@@ -622,22 +621,167 @@ function stepRef(delta) {
   openRefView(state.refIndex + delta);
 }
 
+function plateVideo() {
+  return els.media.querySelector("video.plate-media");
+}
+
+function formatClock(seconds) {
+  if (!Number.isFinite(seconds) || seconds < 0) return "0:00";
+  const whole = Math.floor(seconds);
+  const minutes = Math.floor(whole / 60);
+  const rest = whole % 60;
+  return `${minutes}:${String(rest).padStart(2, "0")}`;
+}
+
+function transportMarkup() {
+  const prefs = state.player;
+  const level = Math.round((prefs.muted ? 0 : prefs.volume) * 100);
+  const silent = prefs.muted || prefs.volume === 0;
+  return `
+    <div class="transport" data-transport>
+      <button class="transport-btn" type="button" data-toggle-play aria-label="${t("pause")}">${icon("pause")}</button>
+      <label class="scrub">
+        <input data-seek type="range" min="0" max="1000" value="0" step="1" aria-label="${t("seek")}">
+      </label>
+      <span class="clock" data-clock>0:00 / 0:00</span>
+      <div class="vol">
+        <button class="transport-btn" type="button" data-mute aria-pressed="${silent ? "true" : "false"}" aria-label="${silent ? t("unmute") : t("mute")}">${icon(silent ? "speaker-off" : "speaker")}</button>
+        <input data-volume type="range" min="0" max="100" value="${level}" aria-label="${t("volume")}" style="--level:${level}%">
+      </div>
+      <button class="transport-btn" type="button" data-loop aria-pressed="${prefs.loop ? "true" : "false"}" aria-label="${t("loop")}">${icon("loop")}</button>
+      <button class="transport-btn" type="button" data-full aria-label="${t("fullscreen")}">${icon("full")}</button>
+    </div>
+  `;
+}
+
+function persistPlayer(patch) {
+  state.player = { ...state.player, ...patch };
+  savePlayer(state.player);
+  const video = plateVideo();
+  if (video) applyPlayer(video);
+  refreshTransportChrome();
+}
+
+function applyPlayer(video) {
+  if (!video) return;
+  video.muted = state.player.muted;
+  video.volume = state.player.volume;
+  video.loop = state.player.loop;
+}
+
+function setPaused(paused) {
+  els.stage.dataset.paused = paused ? "true" : "false";
+  const btn = els.media.querySelector("[data-toggle-play]");
+  if (btn) {
+    btn.innerHTML = icon(paused ? "play" : "pause");
+    btn.setAttribute("aria-label", t(paused ? "play" : "pause"));
+  }
+  if (!paused) bumpTransport();
+}
+
+function refreshTransportChrome() {
+  const prefs = state.player;
+  const silent = prefs.muted || prefs.volume === 0;
+  const muteBtn = els.media.querySelector("[data-mute]");
+  if (muteBtn) {
+    muteBtn.innerHTML = icon(silent ? "speaker-off" : "speaker");
+    muteBtn.setAttribute("aria-pressed", silent ? "true" : "false");
+    muteBtn.setAttribute("aria-label", silent ? t("unmute") : t("mute"));
+  }
+  const slider = els.media.querySelector("[data-volume]");
+  if (slider) {
+    const level = Math.round((prefs.muted ? 0 : prefs.volume) * 100);
+    slider.value = String(level);
+    slider.style.setProperty("--level", `${level}%`);
+  }
+  const loopBtn = els.media.querySelector("[data-loop]");
+  if (loopBtn) loopBtn.setAttribute("aria-pressed", prefs.loop ? "true" : "false");
+  const fullBtn = els.media.querySelector("[data-full]");
+  if (fullBtn) {
+    const on = Boolean(document.fullscreenElement);
+    fullBtn.innerHTML = icon(on ? "full-exit" : "full");
+    fullBtn.setAttribute("aria-label", on ? t("exitFullscreen") : t("fullscreen"));
+  }
+}
+
+function updateTransport(video) {
+  const seek = els.media.querySelector("[data-seek]");
+  const clock = els.media.querySelector("[data-clock]");
+  if (!video || !seek) return;
+  const duration = video.duration || 0;
+  const current = video.currentTime || 0;
+  const played = duration ? (current / duration) * 100 : 0;
+  if (!scrubbing) seek.value = String(duration ? Math.round((current / duration) * 1000) : 0);
+  seek.style.setProperty("--played", `${played}%`);
+  if (clock) clock.textContent = `${formatClock(current)} / ${formatClock(duration)}`;
+}
+
+function bindPlateVideo(video) {
+  if (!video) return;
+  applyPlayer(video);
+  const refresh = () => updateTransport(video);
+  ["timeupdate", "durationchange", "loadedmetadata", "seeked", "playing"].forEach((name) => {
+    video.addEventListener(name, refresh);
+  });
+  video.addEventListener("play", () => setPaused(false));
+  video.addEventListener("pause", () => setPaused(true));
+  video.addEventListener("ended", () => {
+    if (!video.loop) setPaused(true);
+  });
+  refresh();
+  refreshTransportChrome();
+  video.play().then(() => {
+    setPaused(false);
+    refresh();
+  }).catch(() => setPaused(true));
+}
+
 function togglePlay() {
-  const video = els.media.querySelector(".plate video");
+  const video = plateVideo();
   if (!video) return;
   if (video.paused) {
-    video.play();
-    els.stage.dataset.paused = "false";
-    const btn = els.media.querySelector("[data-toggle-play]");
-    btn.innerHTML = icon("pause");
-    btn.setAttribute("aria-label", t("pause"));
+    applyPlayer(video);
+    video.play().then(() => setPaused(false)).catch(() => setPaused(true));
   } else {
     video.pause();
-    els.stage.dataset.paused = "true";
-    const btn = els.media.querySelector("[data-toggle-play]");
-    btn.innerHTML = icon("play");
-    btn.setAttribute("aria-label", t("play"));
+    setPaused(true);
   }
+}
+
+function toggleMute() {
+  persistPlayer({ muted: !state.player.muted });
+}
+
+function toggleLoop() {
+  persistPlayer({ loop: !state.player.loop });
+}
+
+async function toggleFullscreen() {
+  const frame = els.media.querySelector(".plate-frame");
+  if (!frame) return;
+  try {
+    if (document.fullscreenElement) await document.exitFullscreen();
+    else await frame.requestFullscreen();
+  } catch {
+    /* some browsers reject fullscreen without a fresh gesture */
+  }
+  refreshTransportChrome();
+}
+
+function seekTo(ratio) {
+  const video = plateVideo();
+  if (!video || !video.duration) return;
+  video.currentTime = Math.min(video.duration, Math.max(0, ratio * video.duration));
+  updateTransport(video);
+}
+
+function bumpTransport() {
+  const bar = els.media.querySelector(".transport");
+  if (!bar) return;
+  bar.classList.add("is-on");
+  window.clearTimeout(hideTransportTimer);
+  if (els.stage.dataset.paused === "true") return;
+  hideTransportTimer = window.setTimeout(() => bar.classList.remove("is-on"), 2400);
 }
 
 function renderChips() {
@@ -951,9 +1095,54 @@ function bind() {
     if (event.target.closest("[data-prev]")) goTo(state.index - 1);
     if (event.target.closest("[data-next]")) goTo(state.index + 1);
     if (event.target.closest("[data-toggle-play]")) togglePlay();
+    if (event.target.closest("[data-mute]")) toggleMute();
+    if (event.target.closest("[data-loop]")) toggleLoop();
+    if (event.target.closest("[data-full]")) toggleFullscreen();
+    if (event.target.closest("video.plate-media") && !event.target.closest(".transport")) {
+      if (absorbVideoClick) {
+        absorbVideoClick = false;
+        return;
+      }
+      togglePlay();
+    }
     const refThumb = event.target.closest("[data-open-ref]");
     if (refThumb) openRefView(Number(refThumb.dataset.openRef));
   });
+  els.stage.addEventListener("pointerdown", (event) => {
+    if (
+      event.target.closest("video.plate-media")
+      && !event.target.closest(".transport")
+      && window.matchMedia("(hover: none)").matches
+      && els.stage.dataset.paused !== "true"
+    ) {
+      const bar = els.media.querySelector(".transport");
+      if (bar && !bar.classList.contains("is-on")) absorbVideoClick = true;
+    }
+    if (event.target.closest(".plate-frame")) bumpTransport();
+    if (event.target.closest("[data-seek]")) scrubbing = true;
+  });
+  els.stage.addEventListener("pointermove", (event) => {
+    if (event.target.closest(".plate-frame")) bumpTransport();
+  });
+  els.stage.addEventListener("input", (event) => {
+    const seek = event.target.closest("[data-seek]");
+    if (seek) {
+      seekTo(Number(seek.value) / 1000);
+      return;
+    }
+    const volume = event.target.closest("[data-volume]");
+    if (volume) {
+      const next = Number(volume.value) / 100;
+      persistPlayer({
+        volume: next === 0 ? state.player.volume : next,
+        muted: next === 0,
+      });
+    }
+  });
+  window.addEventListener("pointerup", () => {
+    scrubbing = false;
+  });
+  document.addEventListener("fullscreenchange", refreshTransportChrome);
 
   els.strip.addEventListener("click", (event) => {
     const refThumb = event.target.closest("[data-open-ref]");
@@ -1056,11 +1245,14 @@ function bind() {
     if (event.key === "ArrowRight") goTo(state.index + 1);
     if (event.key === "l" || event.key === "L") toggleLike();
     if (event.key === "r" || event.key === "R") openRefView(0);
+    if ((event.key === "m" || event.key === "M") && currentWork()?.type === "video") toggleMute();
+    if ((event.key === "f" || event.key === "F") && currentWork()?.type === "video") toggleFullscreen();
     if (event.key === " ") {
       event.preventDefault();
       togglePlay();
     }
     if (event.key === "Escape") {
+      if (document.fullscreenElement) return;
       if (els.upload.open) els.upload.close();
       else if (els.auth.open) els.auth.close();
       else if (els.publish.open) els.publish.close();
@@ -1074,7 +1266,7 @@ function bind() {
     touchX = event.changedTouches[0].clientX;
   }, { passive: true });
   els.stage.addEventListener("touchend", (event) => {
-    if (event.target.closest(".prompt-rail")) return;
+    if (event.target.closest(".prompt-rail") || event.target.closest(".transport")) return;
     const dx = event.changedTouches[0].clientX - touchX;
     if (Math.abs(dx) < 48) return;
     goTo(state.index + (dx < 0 ? 1 : -1));
@@ -1198,6 +1390,11 @@ function icon(name) {
     "heart-fill": '<path fill="currentColor" d="M240 102c0 70-103.79 126.66-108.21 129a8 8 0 0 1-7.58 0C119.79 228.66 16 172 16 102a62.07 62.07 0 0 1 62-62c20.65 0 38.73 8.88 50 23.89C139.27 48.88 157.35 40 178 40a62.07 62.07 0 0 1 62 62Z"/>',
     play: '<path fill="currentColor" d="M80 64.5v127l104-63.5Z"/>',
     pause: '<path fill="currentColor" d="M80 56h32v144H80Zm64 0h32v144h-32Z"/>',
+    speaker: '<path fill="currentColor" d="M155.51 24.81a8 8 0 0 0-8.42.88L77.25 80H32a16 16 0 0 0-16 16v64a16 16 0 0 0 16 16h45.25l69.84 54.31A8 8 0 0 0 160 224V32a8 8 0 0 0-4.49-7.19ZM32 160V96h40v64Zm112 47.64-56-43.55V91.91l56-43.55Zm40-111.1a8 8 0 0 1 11 2.46 40 40 0 0 1 0 42 8 8 0 1 1-13.41-8.72 24 24 0 0 0 0-24.56 8 8 0 0 1 2.41-11.18Z"/>',
+    "speaker-off": '<path fill="currentColor" d="M53.92 34.62A8 8 0 1 0 42.08 45.38L73.55 80H32a16 16 0 0 0-16 16v64a16 16 0 0 0 16 16h45.25l69.84 54.31A8 8 0 0 0 160 224v-37.37l42.08 46.25a8 8 0 0 0 11.84-10.76ZM144 207.64 88 164.09V101.28l56 61.6Zm16-70.11V32a8 8 0 0 0-12.91-6.31L101.55 64.2l11.55 12.7L144 48.36Z"/>',
+    loop: '<path fill="currentColor" d="M24 128A72.08 72.08 0 0 1 96 56h96V40a8 8 0 0 1 13.66-5.66l24 24a8 8 0 0 1 0 11.32l-24 24A8 8 0 0 1 192 88V72H96a56.06 56.06 0 0 0-56 56 8 8 0 0 1-16 0Zm208 0a8 8 0 0 0-8 8 56.06 56.06 0 0 1-56 56H64v-16a8 8 0 0 0-13.66-5.66l-24 24a8 8 0 0 0 0 11.32l24 24A8 8 0 0 0 64 216v-16h104a72.08 72.08 0 0 0 72-72 8 8 0 0 0-8-8Z"/>',
+    full: '<path fill="currentColor" d="M216 48v40a8 8 0 0 1-16 0V56h-32a8 8 0 0 1 0-16h40a8 8 0 0 1 8 8ZM88 200H56v-32a8 8 0 0 0-16 0v40a8 8 0 0 0 8 8h40a8 8 0 0 0 0-16Zm120-32a8 8 0 0 0-8 8v32h-32a8 8 0 0 0 0 16h40a8 8 0 0 0 8-8v-40a8 8 0 0 0-8-8ZM48 88V48a8 8 0 0 1 8-8h40a8 8 0 0 1 0 16H64v32a8 8 0 0 1-16 0Z"/>',
+    "full-exit": '<path fill="currentColor" d="M160 48v40h40a8 8 0 0 1 0 16h-48a8 8 0 0 1-8-8V48a8 8 0 0 1 16 0Zm-64 160v-40H56a8 8 0 0 1 0-16h48a8 8 0 0 1 8 8v48a8 8 0 0 1-16 0Zm112-56h-48a8 8 0 0 0-8 8v48a8 8 0 0 0 16 0v-40h40a8 8 0 0 0 0-16ZM96 40a8 8 0 0 0-8 8v40H48a8 8 0 0 0 0 16h48a8 8 0 0 0 8-8V48a8 8 0 0 0-8-8Z"/>',
   };
   return `<svg viewBox="0 0 256 256" aria-hidden="true">${paths[name]}</svg>`;
 }

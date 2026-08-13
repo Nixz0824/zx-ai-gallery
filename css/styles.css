@@ -291,6 +291,40 @@ a {
   object-position: center;
 }
 
+.plate-frame {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  max-height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.plate-frame .plate-media {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.plate-frame:fullscreen,
+.plate-frame:-webkit-full-screen {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  display: grid;
+  place-items: center;
+  background: var(--color-paper);
+}
+
+.plate-frame:fullscreen .plate-media,
+.plate-frame:-webkit-full-screen .plate-media {
+  max-width: 100vw;
+  max-height: 100vh;
+}
+
 .ref-stack {
   display: flex;
   flex-direction: column;
@@ -374,26 +408,167 @@ a {
   left: 0;
 }
 
-.play {
+.play-mark {
   position: absolute;
   inset: 0;
   display: grid;
   place-items: center;
   z-index: 3;
+  pointer-events: none;
   color: var(--color-ink);
   opacity: 0;
   transition: opacity var(--dur-short) var(--ease-out);
 }
 
-.plate:hover .play,
-.play:focus-visible,
-.stage[data-paused="true"] .play {
+.stage[data-paused="true"] .play-mark {
   opacity: 1;
 }
 
-.play svg {
-  width: 44px;
-  height: 44px;
+.play-mark svg {
+  width: 48px;
+  height: 48px;
+  filter: drop-shadow(0 2px 16px oklch(8% 0.014 55 / 0.72));
+}
+
+.stage[data-kind="video"] .hit {
+  bottom: 46px;
+}
+
+.transport {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 6;
+  display: grid;
+  grid-template-columns: auto minmax(48px, 1fr) auto auto auto auto;
+  align-items: center;
+  gap: 6px;
+  padding: 30px 10px 8px;
+  background: linear-gradient(to top, oklch(8% 0.014 55 / 0.88), oklch(8% 0.014 55 / 0));
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-short) var(--ease-out);
+}
+
+.plate-frame:hover .transport,
+.transport:focus-within,
+.transport.is-on,
+.stage[data-paused="true"] .transport {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.transport-btn {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  color: var(--color-ink-2);
+  flex: 0 0 auto;
+}
+
+.transport-btn:hover,
+.transport-btn:focus-visible,
+.transport-btn[aria-pressed="true"] {
+  color: var(--color-accent);
+}
+
+.transport-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.clock {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  color: var(--color-ink-2);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.scrub,
+.vol {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.scrub input,
+.vol input {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 18px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.scrub input::-webkit-slider-runnable-track,
+.vol input::-webkit-slider-runnable-track {
+  height: 2px;
+  background: linear-gradient(
+    to right,
+    var(--color-accent) var(--played, var(--level, 0%)),
+    oklch(93% 0.012 80 / 0.2) var(--played, var(--level, 0%))
+  );
+}
+
+.scrub input::-webkit-slider-thumb,
+.vol input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 8px;
+  height: 8px;
+  margin-top: -3px;
+  background: var(--color-accent);
+  border: 0;
+}
+
+.scrub input::-moz-range-track,
+.vol input::-moz-range-track {
+  height: 2px;
+  background: oklch(93% 0.012 80 / 0.2);
+}
+
+.scrub input::-moz-range-progress,
+.vol input::-moz-range-progress {
+  height: 2px;
+  background: var(--color-accent);
+}
+
+.scrub input::-moz-range-thumb,
+.vol input::-moz-range-thumb {
+  width: 8px;
+  height: 8px;
+  background: var(--color-accent);
+  border: 0;
+}
+
+.vol {
+  position: relative;
+}
+
+.vol input {
+  width: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: width var(--dur-short) var(--ease-out), opacity var(--dur-short) var(--ease-out);
+}
+
+.vol:hover input,
+.vol:focus-within input {
+  width: 72px;
+  opacity: 1;
+}
+
+@media (pointer: coarse) {
+  .vol input {
+    width: 64px;
+    opacity: 1;
+  }
 }
 
 .caption {
@@ -1155,6 +1330,28 @@ html.is-shutter .gate-bottom {
 
   .hit {
     width: 14%;
+  }
+
+  .transport {
+    grid-template-columns: auto minmax(36px, 1fr) auto auto auto;
+    gap: 2px;
+    padding: 24px 6px 6px;
+  }
+
+  .clock {
+    display: none;
+  }
+
+  .vol input,
+  .vol:hover input,
+  .vol:focus-within input {
+    width: 64px;
+    opacity: 1;
+  }
+
+  .transport-btn {
+    width: 40px;
+    height: 40px;
   }
 
   .wordmark {

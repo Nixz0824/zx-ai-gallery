@@ -113,6 +113,31 @@ export function saveRole(role) {
   else sessionStorage.removeItem("nix-role");
 }
 
+const PLAYER_KEY = "zx-player";
+
+function clamp(value, min, max, fallback) {
+  const next = Number(value);
+  if (!Number.isFinite(next)) return fallback;
+  return Math.min(max, Math.max(min, next));
+}
+
+export function loadPlayer() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(PLAYER_KEY) || "{}");
+    return {
+      volume: clamp(raw.volume, 0, 1, 0.8),
+      muted: raw.muted !== false,
+      loop: raw.loop !== false,
+    };
+  } catch {
+    return { volume: 0.8, muted: true, loop: true };
+  }
+}
+
+export function savePlayer(prefs) {
+  localStorage.setItem(PLAYER_KEY, JSON.stringify(prefs));
+}
+
 export async function fetchCatalog() {
   const res = await fetch("data/works.json", { cache: "no-store" });
   if (!res.ok) return [];
