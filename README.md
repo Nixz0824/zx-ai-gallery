@@ -11,7 +11,7 @@ python server.py
 
 浏览器打开 http://127.0.0.1:8765
 
-线上地址：https://nixz0824.github.io/zhang-xin/
+线上地址：https://nixz0824.github.io/zx-ai-gallery/
 
 也可以直接打开 `index.html`。不经过 `server.py`、也没在「发布设置」里填 GitHub 令牌时，上传只留在当前浏览器，访客看不到。
 
@@ -40,7 +40,7 @@ python server.py
 1. 打开本人模式，点 **发布设置**
 2. 到 GitHub 生成一个 Fine-grained 或 classic 令牌，勾选这个仓库的 `repo` / Contents 写权限
 3. 把令牌贴进去并保存。令牌只留在你这台电脑的浏览器里
-4. 再上传作品。页面会把文件写入 `Nixz0824/zhang-xin`，一两分钟后别人刷新线上页就能看到
+4. 再上传作品。页面会把文件写入 `Nixz0824/zx-ai-gallery`，一两分钟后别人刷新线上页就能看到
 
 没有令牌时，上传仍可先留在本机。也可以继续用 `git add` 后推送到仓库。
 
