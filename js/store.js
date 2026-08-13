@@ -217,6 +217,11 @@ export async function removeLocalWork(id) {
   }
 }
 
+function isStoredPath(value) {
+  const text = String(value || "");
+  return Boolean(text) && !text.startsWith("blob:") && !text.startsWith("data:");
+}
+
 export async function tryPersistToServer(work, file, refFiles = [], posterFile = null) {
   const body = new FormData();
   body.append("meta", JSON.stringify({
@@ -227,7 +232,8 @@ export async function tryPersistToServer(work, file, refFiles = [], posterFile =
     prompt: work.prompt,
     createdAt: work.createdAt,
     likes: work.likes || 0,
-    poster: work.poster || "",
+    src: isStoredPath(work.src) ? work.src : "",
+    poster: isStoredPath(work.poster) ? work.poster : "",
     refs: work.refs || [],
   }));
   if (file) body.append("file", file, file.name);

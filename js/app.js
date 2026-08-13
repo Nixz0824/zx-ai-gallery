@@ -26,7 +26,7 @@ import {
   loadDraftBlobs,
   clearDraftBlobs,
 } from "./store.js";
-import { captureVideoPoster, blobToFile } from "./poster.js";
+import { captureVideoPoster, captureFromVideoElement, blobToFile } from "./poster.js";
 import { getLikeCount, addLike, getLikeCounts } from "./likes.js";
 import {
   loadToken,
@@ -127,6 +127,8 @@ let pendingRefs = [];
 let hasRefs = false;
 let toastTimer = 0;
 let skipDraftPersist = false;
+let railObserver = null;
+let posterJobs = new Set();
 
 function t(key, vars) {
   const table = STRINGS[state.lang] || STRINGS.zh;
@@ -296,7 +298,7 @@ function renderStage() {
 
   const src = srcOf(work);
   const poster = posterOf(work);
-  const bloom = poster || src;
+  const bloom = poster || (work.type === "image" ? src : "");
   const refs = refsOf(work);
   if (state.refIndex >= refs.length) state.refIndex = 0;
 
@@ -317,7 +319,7 @@ function renderStage() {
     : "";
 
   els.media.innerHTML = `
-    <div class="bloom" aria-hidden="true"><img src="${bloom}" alt=""></div>
+    <div class="bloom" aria-hidden="true">${bloom ? `<img src="${bloom}" alt="">` : ""}</div>
     <div class="stage-planes">
       ${rail("en", promptEn)}
       <div class="plate">
@@ -329,18 +331,7 @@ function renderStage() {
     </div>
   `;
 
-  const main = els.media.querySelector(".plate-media");
-  if (main) {
-    const sync = () => {
-      applyOrient(main);
-      syncPromptRails();
-    };
-    main.addEventListener("load", sync);
-    main.addEventListener("loadedmetadata", sync);
-    main.addEventListener("resize", sync);
-    if (main.complete || main.readyState >= 1) sync();
-  }
-  window.requestAnimationFrame(syncPromptRails);
+  watchPromptRails(els.media.querySelector(".plate-media"));
 
   if (work.type === "video") {
     const video = els.media.querySelector(".plate video");
@@ -367,31 +358,81 @@ function renderStage() {
     total: String(list.length).padStart(2, "0"),
   });
 
+  const thumbs = list
+    .map((item, i) => {
+      const current = i === state.index;
+      return `
+        <button class="thumb" type="button" data-index="${i}" aria-current="${current}" aria-label="${localized(item.title, state.lang) || t("untitled")}">
+          ${thumbMarkup(item)}
+        </button>
+      `;
+    })
+    .join("");
   const refDock = refs.length
     ? `<div class="ref-dock">${refs.map((item, i) => `
         <button type="button" data-open-ref="${i}" aria-label="${t("refLabel")} ${i + 1}">
           <img src="${item.src}" alt="">
         </button>
-      `).join("")}</div><span class="dock-rule" aria-hidden="true"></span>`
+      `).join("")}</div>`
     : "";
 
-  els.strip.innerHTML = refDock + list
-    .map((item, i) => {
-      const current = i === state.index;
-      const thumb = posterOf(item) || srcOf(item);
-      return `
-        <button class="thumb" type="button" data-index="${i}" aria-current="${current}" aria-label="${localized(item.title, state.lang) || t("untitled")}">
-          <img src="${thumb}" alt="">
-        </button>
-      `;
-    })
-    .join("");
+  els.strip.innerHTML = `<div class="strip-works">${thumbs}</div>${refDock}`;
+  els.strip.querySelectorAll(".thumb video").forEach(primeThumbVideo);
 
   const active = els.strip.querySelector("[aria-current='true']");
   if (active) {
     active.scrollIntoView({ inline: "center", block: "nearest", behavior: reduceMotion ? "auto" : "smooth" });
   }
   fillMissingPosters(list);
+}
+
+function thumbMarkup(item) {
+  const poster = posterOf(item);
+  if (poster) return `<img src="${poster}" alt="">`;
+  if (item.type === "video") {
+    return `<video src="${srcOf(item)}" muted playsinline preload="auto"></video>`;
+  }
+  return `<img src="${srcOf(item)}" alt="">`;
+}
+
+function primeThumbVideo(video) {
+  const jump = () => {
+    try {
+      video.currentTime = Math.min(0.08, Math.max(0, (video.duration || 1) * 0.01));
+    } catch {
+      /* metadata-only files can reject an early seek */
+    }
+  };
+  if (video.readyState >= 1) jump();
+  else video.addEventListener("loadedmetadata", jump, { once: true });
+}
+
+function watchPromptRails(mediaEl) {
+  if (railObserver) {
+    railObserver.disconnect();
+    railObserver = null;
+  }
+  const plate = els.media.querySelector(".plate");
+  const sync = () => {
+    if (mediaEl) applyOrient(mediaEl);
+    syncPromptRails();
+  };
+  railObserver = new ResizeObserver(sync);
+  if (plate) railObserver.observe(plate);
+  if (mediaEl) railObserver.observe(mediaEl);
+  if (!mediaEl) {
+    syncPromptRails();
+    return;
+  }
+  mediaEl.addEventListener("load", sync);
+  mediaEl.addEventListener("loadedmetadata", sync);
+  mediaEl.addEventListener("loadeddata", sync);
+  mediaEl.addEventListener("playing", () => {
+    sync();
+    capturePosterFromPlate();
+  });
+  if (mediaEl.complete || mediaEl.readyState >= 1) sync();
+  window.requestAnimationFrame(() => window.requestAnimationFrame(sync));
 }
 
 function syncPromptRails() {
@@ -406,21 +447,67 @@ function syncPromptRails() {
   });
 }
 
+async function applyPoster(work, blob) {
+  if (!work || !blob) return;
+  const key = `${work.id}::poster`;
+  const prev = state.objectUrls.get(key);
+  const url = URL.createObjectURL(blob);
+  state.objectUrls.set(key, url);
+  if (prev && prev.startsWith("blob:")) URL.revokeObjectURL(prev);
+  work.poster = url;
+  const list = visibleWorks();
+  const index = list.findIndex((item) => item.id === work.id);
+  const button = index >= 0 ? els.strip.querySelector(`[data-index="${index}"]`) : null;
+  if (button) button.innerHTML = `<img src="${url}" alt="">`;
+  const bloom = els.media.querySelector(".bloom img");
+  if (currentWork()?.id === work.id) {
+    if (bloom) bloom.src = url;
+    else {
+      const host = els.media.querySelector(".bloom");
+      if (host) host.innerHTML = `<img src="${url}" alt="">`;
+    }
+    const plate = els.media.querySelector(".plate-media");
+    if (plate && plate.tagName === "VIDEO") plate.setAttribute("poster", url);
+  }
+  await saveLocalWork(work, null, [], blob);
+  const remote = await tryPersistToServer(work, null, [], blobToFile(blob, "poster.jpg", "image/jpeg"));
+  if (remote.ok && remote.remote?.poster && !String(remote.remote.poster).startsWith("blob:")) {
+    work.poster = remote.remote.poster;
+    work.local = false;
+  }
+}
+
+async function capturePosterFromPlate() {
+  const work = currentWork();
+  if (!work || work.type !== "video" || posterOf(work) || posterJobs.has(work.id)) return;
+  const video = els.media.querySelector(".plate-media");
+  if (!video || video.tagName !== "VIDEO") return;
+  posterJobs.add(work.id);
+  try {
+    const blob = await captureFromVideoElement(video);
+    if (blob) await applyPoster(work, blob);
+  } finally {
+    posterJobs.delete(work.id);
+  }
+}
+
 async function fillMissingPosters(list) {
   for (const item of list) {
-    if (item.type !== "video") continue;
-    if (posterOf(item)) continue;
+    if (item.type !== "video" || posterOf(item) || posterJobs.has(item.id)) continue;
     const src = srcOf(item);
     if (!src) continue;
-    const blob = await captureVideoPoster(src);
-    if (!blob) continue;
-    const url = URL.createObjectURL(blob);
-    state.objectUrls.set(`${item.id}::poster`, url);
-    item.poster = url;
-    const thumb = els.strip.querySelector(`[data-index] img`);
-    const index = list.indexOf(item);
-    const button = els.strip.querySelector(`[data-index="${index}"] img`);
-    if (button) button.src = url;
+    posterJobs.add(item.id);
+    try {
+      let blob = null;
+      const plate = els.media.querySelector(".plate-media");
+      if (plate && plate.tagName === "VIDEO" && currentWork()?.id === item.id) {
+        blob = await captureFromVideoElement(plate);
+      }
+      if (!blob) blob = await captureVideoPoster(src);
+      if (blob) await applyPoster(item, blob);
+    } finally {
+      posterJobs.delete(item.id);
+    }
   }
 }
 

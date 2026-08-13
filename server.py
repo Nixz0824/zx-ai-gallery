@@ -10,7 +10,6 @@ Run from this folder:
 from __future__ import annotations
 
 import json
-import mimetypes
 import re
 import uuid
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -33,6 +32,36 @@ def load_works() -> list[dict]:
 def save_works(works: list[dict]) -> None:
     DATA.parent.mkdir(parents=True, exist_ok=True)
     DATA.write_text(json.dumps({"works": works}, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def extract_poster(video_path: Path, dest: Path) -> bool:
+    """Grab the first usable frame. Optional: needs PyAV if the browser poster failed."""
+    try:
+        import av
+    except ImportError:
+        return False
+    if not video_path.exists():
+        return False
+    try:
+        container = av.open(str(video_path))
+        stream = next((item for item in container.streams if item.type == "video"), None)
+        if stream is None:
+            container.close()
+            return False
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        saved = False
+        for index, frame in enumerate(container.decode(stream)):
+            image = frame.to_image().convert("RGB")
+            sample = image.resize((24, 24)).convert("L")
+            avg = sum(sample.getdata()) / 576
+            if avg > 10 or index >= 24:
+                image.save(dest, "JPEG", quality=86)
+                saved = dest.exists() and dest.stat().st_size > 400
+                break
+        container.close()
+        return saved
+    except Exception:
+        return False
 
 
 def safe_name(name: str) -> str:
@@ -107,6 +136,11 @@ class Handler(SimpleHTTPRequestHandler):
             dest = poster_dir / f"{meta.get('id') or uuid.uuid4().hex}.jpg"
             dest.write_bytes(posters[0]["content"])
             poster_path = dest.relative_to(ROOT).as_posix()
+        if work_type == "video" and not poster_path and src:
+            poster_dir = MEDIA / "posters"
+            dest = poster_dir / f"{meta.get('id') or uuid.uuid4().hex}.jpg"
+            if extract_poster(ROOT / src, dest):
+                poster_path = dest.relative_to(ROOT).as_posix()
         if not refs:
             existing = meta.get("refs") or []
             refs = [item if isinstance(item, str) else item.get("src") for item in existing]
@@ -186,6 +220,7 @@ def main():
     MEDIA.joinpath("images").mkdir(parents=True, exist_ok=True)
     MEDIA.joinpath("videos").mkdir(parents=True, exist_ok=True)
     MEDIA.joinpath("refs").mkdir(parents=True, exist_ok=True)
+    MEDIA.joinpath("posters").mkdir(parents=True, exist_ok=True)
     DATA.parent.mkdir(parents=True, exist_ok=True)
     server = ThreadingHTTPServer(("127.0.0.1", 8765), Handler)
     print("ZHANG XIN  http://127.0.0.1:8765")
