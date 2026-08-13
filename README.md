@@ -4,14 +4,17 @@
 
 ## 打开
 
+日常看作品、给别人看：直接打开 https://nixz0824.github.io/zx-ai-gallery/  
+不需要开这个对话，也不需要开 Python。
+
+本机上传并写入文件夹：双击 `打开本地页.bat`，或自己运行：
+
 ```bash
 cd 网页/nix-archive
 python server.py
 ```
 
-浏览器打开 http://127.0.0.1:8765
-
-线上地址：https://nixz0824.github.io/zx-ai-gallery/
+然后浏览器打开 http://127.0.0.1:8765
 
 也可以直接打开 `index.html`。不经过 `server.py`、也没在「发布设置」里填 GitHub 令牌时，上传只留在当前浏览器，访客看不到。
 
