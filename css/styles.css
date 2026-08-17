@@ -609,6 +609,14 @@ a {
   max-width: 40ch;
 }
 
+.work-title {
+  margin: 0 0 6px;
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-ink);
+}
+
 .models {
   margin: 0;
   font-family: var(--font-mono);

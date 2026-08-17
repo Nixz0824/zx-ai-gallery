@@ -73,6 +73,7 @@ const els = {
   stage: document.querySelector(".stage"),
   media: document.querySelector(".stage-media"),
   models: document.querySelector("[data-models]"),
+  workTitle: document.querySelector("[data-work-title]"),
   prompt: document.querySelector("[data-prompt]"),
   like: document.querySelector("[data-like]"),
   likeIcon: document.querySelector("[data-like-icon]"),
@@ -414,6 +415,7 @@ function renderStage() {
     els.strip.hidden = true;
     els.empty.hidden = false;
     els.emptyAction.hidden = state.role !== "owner";
+    if (els.workTitle) els.workTitle.textContent = "";
     return;
   }
 
@@ -467,6 +469,7 @@ function renderStage() {
 
   if (work.type === "video") bindPlateVideo(els.media.querySelector("video.plate-media"));
 
+  if (els.workTitle) els.workTitle.textContent = localized(work.title, state.lang) || t("untitled");
   els.models.textContent = (work.models || []).join("  ");
   const liked = Boolean(state.liked[work.id]);
   els.like.setAttribute("aria-pressed", liked ? "true" : "false");
