@@ -66,13 +66,17 @@
     </dialog>
 
     <div class="owner-bar owner-only" hidden>
-      <button class="text-link" type="button" data-open-upload data-i18n="upload">上传</button>
-      <button class="text-link" type="button" data-edit data-i18n="edit">编辑</button>
-      <button class="text-link" type="button" data-delete data-i18n="delete">删除</button>
-      <button class="text-link" type="button" data-export data-i18n="export">导出清单</button>
-      <button class="text-link" type="button" data-likes-board data-i18n="likesBoard">点赞</button>
-      <button class="text-link" type="button" data-publish data-i18n="publish">发布设置</button>
-      <button class="text-link" type="button" data-leave-owner data-i18n="leaveOwner">回到浏览</button>
+      <div class="owner-bar-actions">
+        <button class="text-link" type="button" data-open-upload data-i18n="upload">上传</button>
+        <button class="text-link" type="button" data-edit data-i18n="edit">编辑</button>
+        <button class="text-link" type="button" data-delete data-i18n="delete">删除</button>
+        <button class="text-link" type="button" data-export data-i18n="export">导出清单</button>
+        <button class="text-link" type="button" data-likes-board data-i18n="likesBoard">点赞</button>
+        <button class="text-link" type="button" data-publish data-i18n="publish">发布设置</button>
+        <button class="text-link" type="button" data-sync-pending data-i18n="syncNow">补发未上线作品</button>
+        <button class="text-link" type="button" data-leave-owner data-i18n="leaveOwner">回到浏览</button>
+      </div>
+      <p class="owner-status" data-owner-status></p>
     </div>
 
     <dialog id="auth">
@@ -90,6 +94,7 @@
     <dialog class="drawer" id="upload">
       <form id="upload-form">
         <h2 data-i18n="uploadTitle">上传作品</h2>
+        <p class="preview-name" data-upload-live-hint></p>
         <label class="drop" data-drop>
           <span data-i18n="drop">拖放作品文件或点击选择</span>
           <input id="file" type="file" accept="image/*,video/*">
@@ -140,13 +145,17 @@
     <dialog id="publish">
       <form class="sheet" id="publish-form">
         <h2 data-i18n="publishTitle">发布到 GitHub</h2>
-        <p class="preview-name" data-i18n="tokenHint">只存在这台电脑的这个浏览器里。权限选 repo，用来把作品写入仓库。</p>
+        <ol class="publish-steps">
+          <li data-i18n="publishStep1">① 先在这里保存令牌（仓库要有 Contents 读写权限）。</li>
+          <li data-i18n="publishStep2">② 再上传作品。先上传后填令牌也可以：保存令牌时会自动把本机未上线的作品补发上去。</li>
+        </ol>
+        <p class="preview-name" data-i18n="tokenHint">保存在这个浏览器里，关掉标签也不会丢。权限选 Contents: Read and write（或 classic 的 repo）。</p>
         <div class="field">
           <label for="gh-token" data-i18n="tokenLabel">GitHub 令牌</label>
           <input id="gh-token" type="password" autocomplete="off">
         </div>
         <p class="form-error" data-publish-status></p>
-        <button class="text-link" type="submit" data-i18n="tokenSave">保存</button>
+        <button class="text-link" type="submit" data-i18n="tokenSave">保存并补发</button>
         <button class="text-link" type="button" data-clear-token data-i18n="tokenClear">清除</button>
         <a class="text-link" data-open-site href="#" target="_blank" rel="noreferrer" data-i18n="openSite">打开线上页</a>
         <button class="text-link" type="button" data-close data-i18n="close">关闭</button>

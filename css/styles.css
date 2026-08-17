@@ -973,14 +973,46 @@ a {
   right: var(--page-gutter);
   z-index: var(--z-chrome);
   display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-8);
+  max-width: min(78vw, 40rem);
+}
+
+.owner-bar-actions {
+  display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: var(--space-12) var(--space-16);
-  max-width: min(70vw, 36rem);
 }
 
 .owner-bar .text-link {
   border-bottom-color: transparent;
+}
+
+.owner-status {
+  margin: 0;
+  max-width: 28rem;
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+  line-height: 1.45;
+  text-align: right;
+}
+
+.owner-status[data-tone="warn"] {
+  color: var(--color-ink);
+}
+
+.publish-steps {
+  margin: 0 0 var(--space-20);
+  padding-left: 1.2em;
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+  line-height: 1.55;
+}
+
+.publish-steps li + li {
+  margin-top: var(--space-8);
 }
 
 dialog {

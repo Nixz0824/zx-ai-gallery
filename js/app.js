@@ -114,6 +114,9 @@ const els = {
   tokenInput: document.querySelector("#gh-token"),
   clearToken: document.querySelector("[data-clear-token]"),
   openSite: document.querySelector("[data-open-site]"),
+  ownerStatus: document.querySelector("[data-owner-status]"),
+  uploadLiveHint: document.querySelector("[data-upload-live-hint]"),
+  syncPending: document.querySelector("[data-sync-pending]"),
   likesDialog: document.querySelector("#likes"),
   likesOpen: document.querySelector("[data-likes-board]"),
   likesList: document.querySelector("[data-likes-list]"),
@@ -165,6 +168,7 @@ function applyChrome() {
   els.ownerBar.hidden = state.role !== "owner";
   const uploadHead = document.querySelector("#upload h2");
   if (uploadHead) uploadHead.textContent = state.editingId ? t("editTitle") : t("uploadTitle");
+  refreshPublishChrome();
 }
 
 function visibleWorks() {
@@ -278,11 +282,126 @@ function withViewTransition(fn) {
   document.startViewTransition(fn);
 }
 
-function toast(message) {
+function toast(message, ms = 2800) {
   els.toast.textContent = message;
   els.toast.classList.add("is-on");
   window.clearTimeout(toastTimer);
-  toastTimer = window.setTimeout(() => els.toast.classList.remove("is-on"), 2800);
+  toastTimer = window.setTimeout(() => els.toast.classList.remove("is-on"), ms);
+}
+
+function unpublishedWorks() {
+  return state.works.filter((work) => !state.deleted.has(work.id) && !isStoredPath(work.src));
+}
+
+function githubErrorMessage(error) {
+  const msg = String((error && error.message) || error || "");
+  if (/file too large/i.test(msg)) return t("fileTooBig");
+  if (/missing local file/i.test(msg)) return t("missingLocalFile");
+  if (/resource not accessible|bad credentials|401|403/i.test(msg)) return t("tokenNoWrite");
+  return msg || t("publishFail");
+}
+
+function refreshPublishChrome() {
+  const token = Boolean(loadToken());
+  const pending = unpublishedWorks().length;
+  if (els.uploadLiveHint) {
+    els.uploadLiveHint.textContent = token ? t("liveHintOn") : t("liveHintOff");
+  }
+  if (els.syncPending) {
+    els.syncPending.hidden = !(state.role === "owner" && token && pending);
+  }
+  if (!els.ownerStatus) return;
+  if (state.role !== "owner") {
+    els.ownerStatus.textContent = "";
+    els.ownerStatus.dataset.tone = "";
+    return;
+  }
+  if (!token) {
+    els.ownerStatus.textContent = t("statusNeedToken");
+    els.ownerStatus.dataset.tone = "warn";
+    return;
+  }
+  if (pending) {
+    els.ownerStatus.textContent = t("statusPending", { n: pending });
+    els.ownerStatus.dataset.tone = "warn";
+    return;
+  }
+  els.ownerStatus.textContent = t("statusSynced");
+  els.ownerStatus.dataset.tone = "ok";
+}
+
+async function filesForWork(work) {
+  let file = null;
+  if (!isStoredPath(work.src)) {
+    const blob = await loadBlob(work.id);
+    if (!blob) throw new Error("missing local file");
+    file = blobToFile(blob, work.filename || `${work.id}`, blob.type);
+  }
+  const refFiles = [];
+  const refs = work.refs || [];
+  for (let i = 0; i < refs.length; i += 1) {
+    const item = refs[i];
+    if (typeof item === "string" && isStoredPath(item)) continue;
+    const key = (item && item.key) || `${work.id}::ref::${i}`;
+    const blob = await loadBlob(key);
+    if (blob) refFiles.push(blobToFile(blob, `${work.id}-${i + 1}`, blob.type));
+  }
+  let posterFile = null;
+  if (!isStoredPath(work.poster)) {
+    const blob = await loadBlob(`${work.id}::poster`);
+    if (blob) posterFile = blobToFile(blob, "poster.jpg", blob.type || "image/jpeg");
+  }
+  return { file, refFiles, posterFile };
+}
+
+async function publishOneWork(work, file, refFiles = [], posterFile = null) {
+  const token = loadToken();
+  if (!token || !state.site) throw new Error("no token");
+  const remoteWork = await publishWork(state.site, token, work, file, refFiles, posterFile);
+  Object.assign(work, remoteWork);
+  work.local = false;
+  await saveLocalWork(work, null, [], null);
+  return work;
+}
+
+async function publishPendingWorks() {
+  const token = loadToken();
+  const pending = unpublishedWorks();
+  if (!token || !state.site) {
+    toast(t("tokenNeed"), 5600);
+    return { ok: 0, fail: 0 };
+  }
+  if (!pending.length) {
+    toast(t("syncNone"), 3600);
+    return { ok: 0, fail: 0 };
+  }
+  toast(t("publishing"), 8000);
+  if (els.publishStatus) els.publishStatus.textContent = t("publishing");
+  let ok = 0;
+  let fail = 0;
+  let lastReason = "";
+  for (const work of pending) {
+    try {
+      const files = await filesForWork(work);
+      await publishOneWork(work, files.file, files.refFiles, files.posterFile);
+      ok += 1;
+    } catch (error) {
+      fail += 1;
+      lastReason = githubErrorMessage(error);
+    }
+  }
+  if (fail === 0) {
+    const message = t("syncOk", { n: ok });
+    toast(message, 6400);
+    if (els.publishStatus) els.publishStatus.textContent = message;
+  } else {
+    const message = t("syncPartial", { ok, fail, reason: lastReason });
+    toast(message, 7200);
+    if (els.publishStatus) els.publishStatus.textContent = message;
+  }
+  refreshPublishChrome();
+  renderStage();
+  return { ok, fail };
 }
 
 function renderStage() {
@@ -1013,14 +1132,14 @@ async function handleUpload(event) {
 
   const token = loadToken();
   let published = false;
+  let publishReason = "";
   if (token && state.site) {
     try {
-      const remoteWork = await publishWork(state.site, token, work, sourceFile, refFiles, posterFile);
-      Object.assign(work, remoteWork);
-      work.local = false;
+      toast(t("publishing"), 8000);
+      await publishOneWork(work, sourceFile, refFiles, posterFile);
       published = true;
     } catch (error) {
-      toast(String(error.message || "").includes("80MB") ? t("fileTooBig") : t("publishFail"));
+      publishReason = githubErrorMessage(error);
     }
   }
 
@@ -1030,8 +1149,9 @@ async function handleUpload(event) {
   els.upload.close();
   resetUpload();
   skipDraftPersist = false;
-  if (published) toast(t("published"));
-  else toast(existing ? t("savedEdit") : t("saved"));
+  if (published) toast(t("published"), 6400);
+  else if (!token) toast(existing ? `${t("savedEdit")} · ${t("savedLocalOnly")}` : t("savedLocalOnly"), 7200);
+  else toast(t("publishFailDetail", { reason: publishReason }), 7200);
   renderStage();
 }
 
@@ -1109,10 +1229,15 @@ function bind() {
   els.leaveOwner.addEventListener("click", leaveOwner);
   els.publishOpen.addEventListener("click", openPublish);
   els.publishForm.addEventListener("submit", savePublish);
+  els.syncPending.addEventListener("click", () => {
+    publishPendingWorks();
+  });
   els.clearToken.addEventListener("click", () => {
     saveToken("");
     els.tokenInput.value = "";
-    updatePublishStatus();
+    updatePublishStatus(t("tokenNeed"));
+    refreshPublishChrome();
+    toast(t("tokenNeed"), 4200);
   });
   els.likesOpen.addEventListener("click", openLikesBoard);
   els.emptyAction.addEventListener("click", async () => {
@@ -1322,14 +1447,15 @@ function applyQuery() {
 }
 
 function updatePublishStatus(message) {
-  if (!els.publishStatus || !state.site) return;
+  if (!els.publishStatus) return;
   els.publishStatus.textContent = message || (loadToken() ? t("tokenOk") : t("tokenNeed"));
-  if (els.openSite) els.openSite.href = pagesUrl(state.site);
+  if (els.openSite && state.site) els.openSite.href = pagesUrl(state.site);
 }
 
 function openPublish() {
   els.tokenInput.value = loadToken();
   updatePublishStatus();
+  refreshPublishChrome();
   els.publish.showModal();
 }
 
@@ -1337,17 +1463,23 @@ async function savePublish(event) {
   event.preventDefault();
   const token = els.tokenInput.value.trim();
   saveToken(token);
+  refreshPublishChrome();
   if (!token || !state.site) {
     updatePublishStatus(t("tokenNeed"));
+    toast(t("tokenNeed"), 5600);
     return;
   }
+  updatePublishStatus(t("tokenChecking"));
   try {
     await checkRepo(state.site, token);
-    updatePublishStatus(t("tokenOk"));
-    toast(t("tokenOk"));
   } catch {
     updatePublishStatus(t("tokenBad"));
+    toast(t("tokenBad"), 5600);
+    return;
   }
+  updatePublishStatus(t("tokenOk"));
+  toast(t("tokenOk"), 4200);
+  await publishPendingWorks();
 }
 
 async function openLikesBoard() {
