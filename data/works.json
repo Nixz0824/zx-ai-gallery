@@ -1,6 +1,27 @@
 {
   "works": [
     {
+      "id": "2ef100f6-4446-4b85-b828-c8537b17da57",
+      "createdAt": "2026-08-18",
+      "likes": 0,
+      "type": "video",
+      "title": {
+        "zh": "风过银烬",
+        "en": "风过银烬"
+      },
+      "models": [
+        "本地minimax h3"
+      ],
+      "prompt": {
+        "zh": "For the target video, at 0.00 seconds into the target video, <Picture 1> (from [Shot 1]) is fully referenced.\n\nintegrated_multimodal_description: [Shot 1] 高质量二次元插画被赋予生命，保持 <Picture 1> 的线面、灰白主色、唯一的蓝紫高光，以及扁平绘画质感，不要三维写实重绘。开场完全沿用 <Picture 1>：同一张脸、同一银灰长发、同一双蓝紫色晶体虹膜、同一高领切面黑衣、同一蓝紫晶体耳坠、同一低机位胸像近景、同一失焦前景羽片和发亮灰白天空。人物身份、服装、配饰、构图和空间关系全程不变。镜头保持固定近景，仅以极小幅度、极慢速度轻微推近，不切换、不摇、不晃。0.00 秒她保持首帧姿态：3/4 侧面，下颌微抬，目光看向画面右前方，嘴唇闭合，表情冷静。一阵持续的侧风从画面右侧吹向左侧。银灰色长发整缕向左后方扬起，细碎碎发掠过颊侧和眉骨，发梢交错甩动后回落，再被下一阵风重新托起。左耳的层叠蓝紫晶体耳坠随发丝轻轻摆动，切面闪过短暂虹彩。高领黑衣的切面高光随呼吸和风微微游移，肩胸以很小幅度起伏一次完整呼吸。前景失焦的褐色羽片缓慢飘过镜头，有的从右下角进入、有的从左上角离开，始终保持虚焦。背景天光里的细碎亮斑缓慢漂移。约 1.8 秒她自然眨眼一次，眼睑完全合上再睁开，睁开后虹膜里的蓝紫晶体光点仍在。约 4.4 秒再缓慢眨眼一次，比上一次稍慢。全程不转头、不改五官结构、不张嘴、不说话，口型始终闭合。\n\noverall_soundscape: 持续的中等侧风贯穿全片，发丝和衣料被风刮过时有细碎的布料与发丝声。失焦羽片偶尔轻轻擦过。能听见一次很轻的吸气和一次呼气。没有人声。\n\nnon_diegetic_music: 稀疏的低频合成垫底，速度很慢，几乎没有旋律，音量始终压在风声之下，结尾不渐强。",
+        "en": "For the target video, at 0.00 seconds into the target video, <Picture 1> (from [Shot 1]) is fully referenced.\n\nintegrated_multimodal_description: [Shot 1] High-quality 2D-animated illustration brought to life, preserving the linework, grey-and-white palette, isolated blue-violet highlights, and flat painted texture of <Picture 1>. Do not restyle it as live-action or 3D. The shot begins from <Picture 1> and fully preserves the same face, silver-grey windblown hair, crystalline blue-violet irises, high-collar faceted black garment, layered blue-violet crystal earring, low-angle bust close-up, out-of-focus foreground feathers, and bright grey-white sky. Identity, wardrobe, jewelry, composition, and spatial relationships stay identical throughout. The camera holds a static close shot and pushes in with very small amplitude at very slow speed, with no cut, pan, or shake. At 0.00 seconds she holds the first-frame pose: a three-quarter profile, chin slightly lifted, gaze toward the right of frame, lips closed, expression calm. A continuous side wind blows from screen right toward screen left. The long silver-grey hair streams backward and left, fine strands crossing the cheek and brow, tips interleaving, falling, then lifting again on the next gust. The stacked blue-violet crystal earring on the left ear sways with the hair and flashes a brief iridescent glint. Faceted highlights on the black collar shift slightly with breath and wind, and the shoulders and chest rise and fall through one full, small-amplitude breath. Out-of-focus brown feathers drift slowly across the lens, some entering from the lower right and some leaving at the upper left, staying soft. Tiny bright specks in the sky drift slowly. At about 1.8 seconds she blinks once, lids fully closing then opening, the blue-violet crystal points in the irises still visible afterward. At about 4.4 seconds she blinks again, slower than the first. She does not turn her head, change her facial structure, open her mouth, or speak; the lips stay closed through the last frame.\n\noverall_soundscape: A continuous mid-strength side wind runs through the clip, with faint hair and fabric rustle as gusts pass. An out-of-focus feather occasionally brushes past. One light inhale and one exhale are audible. No voices.\n\nnon_diegetic_music: A sparse low synth pad at a very slow tempo, almost without melody, kept quieter than the wind, with no swell at the end."
+      },
+      "refs": [
+        "media/refs/2ef100f6-4446-4b85-b828-c8537b17da57-1.jpg"
+      ],
+      "src": "media/videos/2ef100f6-4446-4b85-b828-c8537b17da57.mp4"
+    },
+    {
       "id": "61a0973c-6c05-45fb-a91e-8cd3ccd932aa",
       "createdAt": "2026-08-18",
       "likes": 0,
