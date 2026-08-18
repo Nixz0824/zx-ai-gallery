@@ -1,6 +1,28 @@
 {
   "works": [
     {
+      "id": "8391a460-8fdc-465d-af4b-294f6c4e7357",
+      "createdAt": "2026-08-18",
+      "likes": 0,
+      "type": "video",
+      "title": {
+        "zh": "欲语泪先流",
+        "en": "欲语泪先流"
+      },
+      "models": [
+        "本地minimax h3"
+      ],
+      "prompt": {
+        "zh": "For the target video, at 0.00 seconds into the target video, <Picture 1> (from [Shot 1]) is fully referenced.\n\nintegrated_multimodal_description: [Shot 1] 真人实拍古装剧，电影感，浅景深。开场完全沿用 <Picture 1>：同一张脸、同一发型头饰耳坠、同一身浅青绿色绣花襦裙、同一室内近景构图、同一柔光与虚化背景。人物位置、服装颜色、首饰和空间关系全程不变。镜头以小幅度、慢速轻微推近，不切换、不摇、不晃。0.00 秒时她保持首帧状态：眉心轻蹙，双眼睁大，视线略偏上对着镜头，上下唇分开约一两毫米，面颊干燥，没有泪。1.5 秒前仍停在这个发愣里，只有睫毛轻颤、呼吸微动。1.5 秒到 3.0 秒，眼神从发愣慢慢变软，嘴唇合拢，胸口起伏稍加重，仍看着镜头。3.0 秒到 4.5 秒，眼皮缓慢闭合，头轻轻低下半寸，嘴角极克制地往上弯成苦笑，下眼睑开始潮湿，一滴泪在左眼角聚起。4.5 秒到 6.00 秒，她重新抬眼看向镜头，双眼睁开但仍湿润；左颊一条清晰泪痕从眼角沿颧骨滑下，右颊几乎没有泪；嘴角保持含蓄浅笑，停在含泪浅笑的终态直到最后一帧。全程不说话，口型不张合出字。不要改脸，不要改发型服装，不要换成窗边侧脸或树叶光斑。\n\noverall_soundscape: 安静的室内底噪贯穿全片，偶有极轻的衣料摩擦。能听见她细弱的吸气与一次轻轻吞咽。4 秒后左颊泪滑落时几乎没有声音。\n\nnon_diegetic_music: 一首缓慢的独奏钢琴，旋律克制、音与音之间留白很大，音量始终压在呼吸之下，结尾不渐强。",
+        "en": "For the target video, at 0.00 seconds into the target video, <Picture 1> (from [Shot 1]) is fully referenced.\n\nintegrated_multimodal_description: [Shot 1] Live-action, cinematic period-drama close-up with shallow depth of field. The shot begins from <Picture 1> and fully preserves the woman's face, high bun, hair ornaments, jade-bead earrings, pale teal-green embroidered ruqun, white crossed collar, indoor close-up composition, soft interior light, and blurred corridor background. Identity, wardrobe, jewelry, and spatial relationships stay identical throughout. The camera pushes in with small amplitude at slow speed and never cuts, pans, or shakes. At 0.00 seconds she holds the first-frame state: brows faintly drawn, eyes wide, gaze slightly upward toward the lens, lips parted by one or two millimeters, cheeks dry, no tears. Through 1.5 seconds she remains in that stunned look, with only a lash tremor and a faint breath. From 1.5 to 3.0 seconds the stare softens, the lips close, and her breath deepens while she keeps looking at the camera. From 3.0 to 4.5 seconds the eyelids close slowly, the head dips by a small amount, the mouth corners lift into a restrained bitter smile, the lower lids grow wet, and a tear gathers at the left eye corner. From 4.5 to 6.00 seconds she lifts her gaze back to the lens, eyes open but still wet; a single clear tear tracks down the left cheek along the cheekbone while the right cheek stays almost dry; the mouth holds the small smile and settles on this wet-eyed expression through the last frame. She never speaks, and the mouth never forms words. Do not change the face, hairstyle, or costume, and do not switch to a window-side profile or leaf-shadow lighting.\n\noverall_soundscape: Quiet indoor room tone continues throughout, with occasional faint fabric rustle. A thin inhale and one small swallow are audible. The tear sliding down the left cheek after 4 seconds makes almost no sound.\n\nnon_diegetic_music: A slow solo-piano line with wide spaces between notes, kept quieter than her breathing, with no swell at the end."
+      },
+      "refs": [
+        "media/refs/8391a460-8fdc-465d-af4b-294f6c4e7357-1.png"
+      ],
+      "poster": "media/posters/8391a460-8fdc-465d-af4b-294f6c4e7357.jpg",
+      "src": "media/videos/8391a460-8fdc-465d-af4b-294f6c4e7357.mp4"
+    },
+    {
       "id": "38b41b87-26c6-47fa-878f-0ee8ac8e28fb",
       "type": "image",
       "src": "media/images/38b41b87-26c6-47fa-878f-0ee8ac8e28fb.png",
